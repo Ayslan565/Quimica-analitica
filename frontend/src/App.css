@@ -68,7 +68,16 @@ body { margin: 0; overflow-x: hidden; font-family: 'Inter', sans-serif; }
 .btn-sidebar.danger:hover { border-color: var(--danger); color: var(--danger); background: rgba(239,68,68,0.1); }
 .btn-sidebar.small { justify-content: center; font-size: 0.8rem; }
 
-/* --- AQUI ESTÁ A CORREÇÃO DOS INPUTS LATERAIS --- */
+/* Efeito do Botão Ativo na Sidebar */
+.btn-sidebar.active {
+  background-color: var(--primary-soft);
+  color: var(--primary);
+  border-left: 4px solid var(--primary);
+  border-radius: 0 6px 6px 0;
+  font-weight: bold;
+}
+
+/* --- INPUTS LATERAIS (CONFIGURAÇÃO DO GRÁFICO) --- */
 .input-group-sidebar { margin-bottom: 15px; }
 
 .input-group-sidebar label { 
@@ -93,12 +102,12 @@ body { margin: 0; overflow-x: hidden; font-family: 'Inter', sans-serif; }
   transition: all 0.2s;
 }
 
-/* Efeito ao passar o mouse: borda fica mais escura */
+/* Efeito ao passar o mouse */
 .input-sidebar:hover {
   border-color: var(--text-muted);
 }
 
-/* Efeito ao clicar: brilha com a cor de destaque */
+/* Efeito ao clicar */
 .input-sidebar:focus {
   border-color: var(--primary);
   box-shadow: 0 0 0 3px var(--primary-soft);
@@ -122,24 +131,47 @@ body { margin: 0; overflow-x: hidden; font-family: 'Inter', sans-serif; }
 .status-badge.live { background: var(--primary-soft); color: var(--primary); border: 1px solid var(--primary); }
 .status-badge.loading { background: rgba(234, 179, 8, 0.2); color: #ca8a04; border: 1px solid #ca8a04; }
 
-/* TABELA */
+/* TABELA DE DADOS (PRINCIPAL) */
 .table-container {
   background: var(--bg-panel); border-radius: 10px; border: 1px solid var(--border);
-  overflow-x: auto; box-shadow: 0 4px 6px var(--shadow); min-height: 200px; flex-shrink: 0;
+  overflow-x: auto; box-shadow: 0 4px 6px var(--shadow); 
+  min-height: 200px; flex-shrink: 0; /* Garante que a tabela não suma */
 }
 table { width: 100%; border-collapse: collapse; font-size: 0.95rem; }
 th { background: var(--primary-soft); color: var(--primary); padding: 15px; border-bottom: 2px solid var(--primary); min-width: 100px; text-transform: uppercase; font-weight: 800; }
 tr { height: 50px; }
 td { border-bottom: 1px solid var(--border); border-right: 1px solid var(--border); position: relative; }
 .sticky-col { position: sticky; left: 0; background: var(--bg-panel); z-index: 2; border-right: 2px solid var(--border); }
+
+/* Inputs da Tabela Principal */
 input { width: 100%; height: 100%; padding: 15px 0; background: transparent; border: none; color: var(--text-main); text-align: center; font-family: monospace; font-size: 1.1rem; outline: none; font-weight: 500; }
 input:focus { background: rgba(99, 102, 241, 0.1); box-shadow: inset 0 -2px 0 var(--primary); }
 
-/* RESULTADOS */
-.results-grid { display: flex; flex-direction: column; gap: 20px; padding-bottom: 80px; }
-.card { background: var(--bg-panel); border: 1px solid var(--border); border-radius: 10px; padding: 20px; box-shadow: 0 2px 4px var(--shadow); height: auto; min-height: min-content; overflow: visible; }
+/* RESULTADOS (GRÁFICO E ESTATÍSTICA) */
+.results-grid { 
+  display: flex; 
+  flex-direction: column; /* Um embaixo do outro */
+  gap: 20px; 
+  padding-bottom: 80px; 
+}
+
+.card { 
+  background: var(--bg-panel); 
+  border: 1px solid var(--border); 
+  border-radius: 10px; 
+  padding: 20px; 
+  box-shadow: 0 2px 4px var(--shadow); 
+  height: auto; 
+  min-height: min-content; 
+  overflow: visible; 
+}
+
 .card h3 { margin: 0 0 20px 0; color: var(--text-muted); font-size: 0.85rem; text-transform: uppercase; letter-spacing: 1px; font-weight: 700; }
-.data-row { display: flex; justify-content: flex-start; gap: 50px; padding: 15px 0; border-bottom: 1px solid var(--border); font-size: 1rem; }
+
+.data-row { 
+  display: flex; justify-content: flex-start; gap: 50px; 
+  padding: 15px 0; border-bottom: 1px solid var(--border); font-size: 1rem; 
+}
 .data-row span:first-child { min-width: 120px; font-weight: bold; color: var(--text-muted); }
 .data-row span:last-child { font-family: monospace; color: var(--primary); font-size: 1.1rem; }
 
@@ -149,3 +181,7 @@ input:focus { background: rgba(99, 102, 241, 0.1); box-shadow: inset 0 -2px 0 va
 .modal h2 { color: var(--text-main); margin-top:0; }
 .btn-confirm { background: var(--danger); color: white; border:none; padding: 8px 16px; border-radius: 6px; cursor: pointer; }
 .btn-cancel { background: transparent; border: 1px solid var(--border); color: var(--text-main); padding: 8px 16px; border-radius: 6px; cursor: pointer; }
+
+@media (max-width: 900px) {
+  .results-grid { grid-template-columns: 1fr; }
+}
