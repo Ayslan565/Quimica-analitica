@@ -1,5 +1,5 @@
 import numpy as np
-from x import stats
+from scipy import stats  # <--- CORRIGIDO AQUI (era 'x')
 
 def calcular_regressao_linear(dados: list):
     """
