@@ -1,9 +1,43 @@
 /* --- 1. RESET E ESTRUTURA GERAL --- */
+:root { 
+  --bg-body: #ffffff; 
+  --bg-sidebar: #f8fafc; 
+  --bg-card: #ffffff; 
+  --bg-input: #ffffff; 
+  --text-main: #0f172a; 
+  --text-muted: #64748b; 
+  --border: #e2e8f0; 
+  --primary: #6366f1; 
+  --primary-soft: #e0e7ff; 
+  --hover-bg: #f1f5f9; 
+  --input-border: #cbd5e1; 
+}
+
+body:not(.light-mode) { 
+  --bg-body: #0f172a; 
+  --bg-sidebar: #1e293b; 
+  --bg-card: #1e293b; 
+  --bg-input: #334155; 
+  --text-main: #f8fafc; 
+  --text-muted: #94a3b8; 
+  --border: #334155; 
+  --primary-soft: rgba(99, 102, 241, 0.2); 
+  --hover-bg: #334155; 
+  --input-border: #475569; 
+}
+
+html, body {
+  background-color: var(--bg-body); 
+  color: var(--text-main);
+  margin: 0;
+  padding: 0;
+  width: 100%;
+  min-height: 100vh;
+}
+
 #root { 
-  max-width: 100%; 
   width: 100%; 
-  margin: 0 auto; 
-  padding: 0; 
+  min-height: 100vh; 
   text-align: center; 
   font-family: Inter, system-ui, Avenir, Helvetica, Arial, sans-serif; 
 }
@@ -13,8 +47,18 @@
   width: 100%; 
   min-height: 100vh; 
   background-color: var(--bg-body); 
-  color: var(--text-main); 
   transition: all 0.3s ease; 
+}
+
+/* Ajuste para monitores gigantes */
+@media (min-width: 1920px) {
+  .dashboard-layout {
+    max-width: 1600px; 
+    margin: 0 auto;    
+    border-left: 1px solid var(--border); 
+    border-right: 1px solid var(--border);
+    box-shadow: 0 0 50px rgba(0,0,0,0.1); 
+  }
 }
 
 .main-content { 
@@ -40,7 +84,7 @@
   top: 0; 
   overflow-y: auto; 
   z-index: 10; 
-  transition: transform 0.3s ease; 
+  transition: transform 0.3s ease, background-color 0.3s ease; 
 }
 
 .sidebar-content { 
@@ -62,7 +106,7 @@
   gap: 10px; 
 }
 
-/* --- 3. BOTÕES E MENUS --- */
+/* --- 3. BOTÕES E MENUS (ATUALIZADO) --- */
 .menu-group { margin-bottom: 20px; }
 
 .menu-label { 
@@ -79,37 +123,48 @@
 .btn-sidebar { 
   display: flex; 
   align-items: center; 
+  justify-content: center; /* Centraliza o texto horizontalmente */
   width: 100%; 
   padding: 12px 15px; 
   margin-bottom: 8px; 
-  border: none; 
   background: transparent; 
   color: var(--text-muted); 
   font-size: 0.95rem; 
   border-radius: 8px; 
   cursor: pointer; 
   transition: all 0.2s; 
-  text-align: left; 
+  text-align: center; /* Garante centralização do texto */
   font-weight: 500; 
+  
+  /* Adiciona a borda com a cor do tema (transparente por padrão) */
+  border: 1px solid transparent; 
 }
 
+/* Hover: Muda a cor do fundo, texto e borda para a cor do tema */
 .btn-sidebar:hover { 
-  background-color: var(--hover-bg); 
-  color: var(--text-main); 
-  transform: translateX(3px); 
+  background-color: var(--primary-soft); /* Fundo suave da cor do tema */
+  color: var(--primary); /* Texto da cor do tema */
+  border-color: var(--primary); /* Borda da cor do tema */
+  transform: translateY(-2px); /* Pequeno efeito de "levantar" */
+  box-shadow: 0 2px 5px rgba(0,0,0,0.05);
 }
 
 .btn-sidebar.active { 
   background-color: var(--primary-soft); 
   color: var(--primary); 
   font-weight: bold; 
-  border-left: 4px solid var(--primary); 
+  border-left: 4px solid var(--primary); /* Mantém a borda lateral grossa para o ativo */
+  border-color: transparent transparent transparent var(--primary); /* Outras bordas transparentes */
 }
 
 .btn-sidebar span { margin-right: 10px; }
 
 .btn-sidebar.danger { color: #ef4444; }
-.btn-sidebar.danger:hover { background-color: #fee2e2; color: #dc2626; }
+.btn-sidebar.danger:hover { 
+  background-color: #fee2e2; 
+  color: #dc2626; 
+  border-color: #dc2626;
+}
 
 /* --- 4. INPUTS E CONFIGURAÇÕES --- */
 .input-group-sidebar { margin-bottom: 12px; text-align: left; }
@@ -119,14 +174,18 @@
   width: 100%; 
   padding: 8px; 
   border-radius: 6px; 
-  border: 1px solid var(--border); 
+  border: 1px solid var(--input-border); 
   background-color: var(--bg-input); 
   color: var(--text-main); 
   font-size: 0.9rem; 
   outline: none; 
-  transition: border-color 0.2s; 
+  transition: border-color 0.2s, box-shadow 0.2s; 
 }
-.input-sidebar:focus { border-color: var(--primary); }
+
+.input-sidebar:focus { 
+  border-color: var(--primary); 
+  box-shadow: 0 0 0 2px var(--primary-soft); 
+}
 
 .setting-item { 
   display: flex; 
@@ -204,13 +263,18 @@ td input {
   background: transparent; 
   color: var(--text-main); 
   border-radius: 4px; 
+  transition: all 0.2s;
 }
-td input:hover, td input:focus { border-color: var(--primary); background: var(--bg-input); }
+td input:hover, td input:focus { 
+  border-color: var(--primary); 
+  background: var(--bg-input); 
+  outline: none;
+}
 
 .sticky-col { position: sticky; left: 0; background-color: var(--bg-card); z-index: 1; border-right: 1px solid var(--border); }
 th.sticky-col { z-index: 3; background-color: var(--bg-body); }
 
-/* --- COLOR PICKER ESTILIZADO --- */
+/* --- COLOR PICKER --- */
 .color-picker { 
   -webkit-appearance: none; 
   appearance: none;
@@ -252,73 +316,112 @@ th.sticky-col { z-index: 3; background-color: var(--bg-body); }
 .btn-confirm { background: #ef4444; color: white; border: none; padding: 8px 16px; border-radius: 5px; cursor: pointer; }
 .btn-cancel { background: var(--bg-input); color: var(--text-main); border: 1px solid var(--border); padding: 8px 16px; border-radius: 5px; cursor: pointer; }
 
-/* --- 7. CORES E TEMAS (Variáveis CSS) --- */
-:root { 
-  --bg-body: #ffffff; 
-  --bg-sidebar: #f8fafc; 
-  --bg-card: #ffffff; 
-  --bg-input: #ffffff; 
-  --text-main: #0f172a; 
-  --text-muted: #64748b; 
-  --border: #e2e8f0; 
-  --primary: #6366f1; 
-  --primary-soft: #e0e7ff; 
-  --hover-bg: #f1f5f9; 
-}
-
-body:not(.light-mode) { 
-  --bg-body: #0f172a; 
-  --bg-sidebar: #1e293b; 
-  --bg-card: #1e293b; 
-  --bg-input: #334155; 
-  --text-main: #f8fafc; 
-  --text-muted: #94a3b8; 
-  --border: #334155; 
-  --primary-soft: rgba(99, 102, 241, 0.2); 
-  --hover-bg: #334155; 
-}
-
-/* --- 8. ESTILOS DA DILUIÇÃO (SEPARADA) --- */
+/* --- 8. DILUIÇÃO --- */
 .diluicao-wrapper { display: flex; align-items: center; justify-content: space-between; gap: 20px; flex-wrap: wrap; margin-top: 20px; }
 .diluicao-block { flex: 1; background: var(--bg-input); padding: 20px; border-radius: 10px; border: 1px solid var(--border); min-width: 250px; }
 .diluicao-block h3 { margin-top: 0; margin-bottom: 15px; color: var(--primary); font-size: 1.1rem; border-bottom: 1px solid var(--border); padding-bottom: 10px; }
 .diluicao-arrow { font-size: 2rem; color: var(--text-muted); display: flex; align-items: center; }
 @media (max-width: 600px) { .diluicao-arrow { display: none; } .diluicao-wrapper { flex-direction: column; } }
 
-/* --- 9. CONFIGURAÇÕES DO PUXADOR DO MENU (CORRIGIDO) --- */
-/* IMPORTANTE: Por padrão, o puxador NÃO EXISTE no PC */
-.mobile-pull-handle { display: none; } 
+/* --- 9. MOBILE --- */
+body:has(.sidebar.mobile-open) {
+  overflow: hidden;
+}
 
-/* --- 10. MOBILE (CELULAR - max-width 768px) --- */
 @media (max-width: 768px) {
-  .dashboard-layout { flex-direction: column; }
+  .dashboard-layout {
+    flex-direction: column;
+  }
+
   .sidebar {
-    position: fixed; bottom: 0; left: 0; width: 100%; min-width: 100%; height: auto; max-height: 85vh;
-    border-right: none; border-top: 1px solid var(--border); border-radius: 20px 20px 0 0; padding-top: 0; z-index: 1000;
-    background-color: var(--bg-sidebar); /* CORRIGIDO: Fundo opaco para esconder o conteúdo atrás */
+    position: fixed;
+    bottom: 0;
+    left: 0;
+    width: 100%;
+    min-width: 100%;
+    height: auto;
+    max-height: 85vh;
+    border-right: none;
+    border-top: 1px solid var(--border);
+    border-radius: 20px 20px 0 0;
+    padding-top: 0;
+    z-index: 1000;
+    background-color: var(--bg-sidebar); 
     transform: translateY(calc(100% - 45px)); 
     transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1);
     box-shadow: 0 -5px 25px rgba(0,0,0,0.3);
   }
-  .sidebar.mobile-open { transform: translateY(0); }
-  .sidebar .brand { display: none; }
 
-  /* SÓ AGORA O PUXADOR APARECE (FLEX) */
-  .mobile-pull-handle {
-    display: flex; flex-direction: column; align-items: center; justify-content: center; height: 45px;
-    background-color: transparent; /* Pega a cor da sidebar */
-    border-radius: 20px 20px 0 0; cursor: pointer; width: 100%;
+  .sidebar.mobile-open {
+    transform: translateY(0);
   }
-  .handle-bar { width: 40px; height: 5px; background-color: var(--text-muted); border-radius: 10px; margin-bottom: 4px; opacity: 0.6; }
-  .mobile-pull-handle span { font-size: 0.7rem; color: var(--text-muted); text-transform: uppercase; letter-spacing: 1px; font-weight: bold; }
-  .main-content { margin-bottom: 60px; height: auto; overflow-y: visible; }
-  .results-grid { grid-template-columns: 1fr; }
-  .mobile-overlay { position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: rgba(0,0,0,0.6); z-index: 999; backdrop-filter: blur(3px); }
+
+  .sidebar .brand {
+    display: none; 
+  }
+
+  .mobile-pull-handle {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    height: 45px;
+    background-color: transparent;
+    border-radius: 20px 20px 0 0;
+    cursor: pointer;
+    width: 100%;
+  }
+
+  .handle-bar {
+    width: 40px;
+    height: 5px;
+    background-color: var(--text-muted);
+    border-radius: 10px;
+    margin-bottom: 4px;
+    opacity: 0.6;
+  }
+
+  .mobile-pull-handle span {
+    font-size: 0.7rem;
+    color: var(--text-muted);
+    text-transform: uppercase;
+    letter-spacing: 1px;
+    font-weight: bold;
+  }
+
+  .main-content {
+    margin-bottom: 60px;
+    height: auto;
+    overflow-y: visible;
+  }
+
+  .results-grid {
+    grid-template-columns: 1fr;
+  }
+  
+  .mobile-overlay {
+    position: fixed;
+    top: 0; left: 0; right: 0; bottom: 0;
+    background: rgba(0,0,0,0.6);
+    z-index: 999;
+    backdrop-filter: blur(3px);
+  }
 }
 
-/* --- 9. DESKTOP (PC - min-width 769px) --- */
+/* --- 10. DESKTOP --- */
 @media (min-width: 769px) {
-  .mobile-pull-handle { display: none !important; }
-  .mobile-overlay { display: none !important; }
-  .sidebar { transform: none !important; }
+  .mobile-pull-handle {
+    display: none !important;
+  }
+  .mobile-overlay {
+    display: none !important;
+  }
+  .sidebar {
+    transform: none !important;
+    position: sticky; 
+    height: 100vh;
+    border-radius: 0;
+    border-top: none;
+    border-right: 1px solid var(--border);
+  }
 }
