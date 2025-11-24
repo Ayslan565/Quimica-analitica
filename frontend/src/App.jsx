@@ -2,7 +2,7 @@ import { useState, useEffect, useRef } from 'react'
 import axios from 'axios'
 import './App.css'
 
-// --- IMPORTAÇÃO DOS ANÚNCIOS (Não mexer) ---
+// --- IMPORTAÇÃO DOS ANÚNCIOS ---
 import AdBanner from './AdBanner'
 
 // --- IMPORTAÇÃO SEGURA DO PLOTLY ---
@@ -24,7 +24,7 @@ function App() {
   // --- NAVEGAÇÃO ---
   const [activeTab, setActiveTab] = useState('dados')
   
-  // --- ESTADO MENU MOBILE (NOVO) ---
+  // --- ESTADO MENU MOBILE ---
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false)
 
   // --- ESTADOS: TRATAMENTO DE DADOS ---
@@ -37,7 +37,7 @@ function App() {
   const [molMassa, setMolMassa] = useState(''); const [molMM, setMolMM] = useState(''); const [molVol, setMolVol] = useState(''); const [molResultado, setMolResultado] = useState(null)
   const [dilC1, setDilC1] = useState(''); const [dilV1, setDilV1] = useState(''); const [dilC2, setDilC2] = useState(''); const [dilV2, setDilV2] = useState('') 
 
-  // --- NOVOS ESTADOS (FUNCIONALIDADES EXTRAS) ---
+  // --- NOVOS ESTADOS ---
   const [mmFormula, setMmFormula] = useState(''); const [mmResultado, setMmResultado] = useState(null)
   const [prepConc, setPrepConc] = useState(''); const [prepVol, setPrepVol] = useState(''); const [prepMM, setPrepMM] = useState(''); const [prepMassa, setPrepMassa] = useState(null)
   const [beerAbs, setBeerAbs] = useState(''); const [beerEpsilon, setBeerEpsilon] = useState(''); const [beerCaminho, setBeerCaminho] = useState('1'); const [beerConc, setBeerConc] = useState(null)
@@ -71,11 +71,11 @@ function App() {
   const calcularMolaridade = () => { const m = parseFloat(molMassa); const mm = parseFloat(molMM); const v = parseFloat(molVol); if (m && mm && v) setMolResultado((m / (mm * (v / 1000))).toFixed(4)); }
   const calcularDiluicao = () => { 
       const c1 = parseFloat(dilC1); const v1 = parseFloat(dilV1); const c2 = parseFloat(dilC2); const v2 = parseFloat(dilV2);
-      if (c1 && v1 && c2 && !v2) alert(`V2: ${((c1 * v1) / c2).toFixed(2)} mL`); 
-      else if (c1 && v1 && !c2 && v2) alert(`C2: ${((c1 * v1) / v2).toFixed(4)} M`);
-      else if (!c1 && v1 && c2 && v2) alert(`C1: ${((c2 * v2) / v1).toFixed(4)} M`);
-      else if (c1 && !v1 && c2 && v2) alert(`V1: ${((c2 * v2) / c1).toFixed(2)} mL`);
-      else alert("Preencha 3 campos!");
+      if (c1 && v1 && c2 && !v2) alert(`V2 Calculado: ${((c1 * v1) / c2).toFixed(2)} mL`); 
+      else if (c1 && v1 && !c2 && v2) alert(`C2 Calculado: ${((c1 * v1) / v2).toFixed(4)} M`);
+      else if (!c1 && v1 && c2 && v2) alert(`C1 Calculado: ${((c2 * v2) / v1).toFixed(4)} M`);
+      else if (c1 && !v1 && c2 && v2) alert(`V1 Calculado: ${((c2 * v2) / c1).toFixed(2)} mL`);
+      else alert("Preencha 3 campos para calcular o 4º!");
   }
 
   // --- NOVAS FUNÇÕES (CHAMADAS API) ---
@@ -121,20 +121,17 @@ function App() {
   return (
     <div className="dashboard-layout">
       
-      {/* --- SIDEBAR (MENU) --- */}
-      {/* No mobile, ela ganha a classe 'mobile-open' quando aberta */}
       <aside className={`sidebar ${isMobileMenuOpen ? 'mobile-open' : ''}`}>
         
-        {/* PUXADOR DO MOBILE (SÓ APARECE NO CELULAR) */}
+        {/* PUXADOR (SÓ APARECE NO MOBILE GRAÇAS AO CSS) */}
         <div className="mobile-pull-handle" onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}>
             <div className="handle-bar"></div>
-            <span>{isMobileMenuOpen ? 'Fechar Menu' : 'Abrir Menu'}</span>
+            <span>{isMobileMenuOpen ? 'Fechar' : 'Menu'}</span>
         </div>
 
         <div className="brand">🧪 LabData Pro</div>
         
         <div className="sidebar-content">
-          {/* --- TEMA --- */}
           <div className="menu-group" style={{marginBottom: '20px'}}>
              <div className="setting-item"><span>Tema</span><button className="theme-toggle" onClick={() => setIsDarkMode(!isDarkMode)}>{isDarkMode ? '🌙' : '☀️'}</button></div>
           </div>
@@ -173,7 +170,6 @@ function App() {
         </div>
       </aside>
 
-      {/* Overlay escuro para fechar o menu clicando fora (Mobile) */}
       {isMobileMenuOpen && <div className="mobile-overlay" onClick={() => setIsMobileMenuOpen(false)}></div>}
 
       <main className="main-content">
@@ -216,12 +212,50 @@ function App() {
             </>
         )}
         
-        {/* --- NOVAS ABAS --- */}
         {activeTab === 'tabela' && <TabelaPeriodica apiUrl={API_URL} />}
 
         {activeTab === 'molaridade' && (<div className="card" style={{maxWidth: '600px', margin: '0 auto'}}><h2>Molaridade</h2><div className="input-group-sidebar"><label>Massa (g)</label><input className="input-sidebar" type="number" value={molMassa} onChange={e => setMolMassa(e.target.value)} /></div><div className="input-group-sidebar"><label>MM (g/mol)</label><input className="input-sidebar" type="number" value={molMM} onChange={e => setMolMM(e.target.value)} /></div><div className="input-group-sidebar"><label>Vol (mL)</label><input className="input-sidebar" type="number" value={molVol} onChange={e => setMolVol(e.target.value)} /></div><button className="btn-sidebar" onClick={calcularMolaridade}>CALCULAR</button>{molResultado && (<div style={{marginTop: '20px', fontSize: '2rem', textAlign: 'center', color: 'var(--primary)'}}>{molResultado} M</div>)}</div>)}
         
-        {activeTab === 'diluicao' && (<div className="card" style={{maxWidth: '800px', margin: '0 auto'}}><h2>Diluição</h2><div style={{display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '10px'}}><div className="input-group-sidebar"><label>C1</label><input className="input-sidebar" type="number" value={dilC1} onChange={e => setDilC1(e.target.value)} /></div><div className="input-group-sidebar"><label>V1</label><input className="input-sidebar" type="number" value={dilV1} onChange={e => setDilV1(e.target.value)} /></div><div className="input-group-sidebar"><label>C2</label><input className="input-sidebar" type="number" value={dilC2} onChange={e => setDilC2(e.target.value)} /></div><div className="input-group-sidebar"><label>V2</label><input className="input-sidebar" type="number" value={dilV2} onChange={e => setDilV2(e.target.value)} /></div></div><button className="btn-sidebar" onClick={calcularDiluicao}>CALCULAR</button></div>)}
+        {/* --- ABA DILUIÇÃO SEPARADA E REORGANIZADA --- */}
+        {activeTab === 'diluicao' && (
+             <div className="card" style={{maxWidth: '800px', margin: '0 auto'}}>
+                    <h2>Calculadora de Diluição</h2>
+                    <p style={{color: 'var(--text-muted)', marginBottom: '20px'}}>Preencha 3 campos e deixe vazio o que você quer descobrir.</p>
+                    
+                    <div className="diluicao-wrapper">
+                        {/* BLOCO 1: SOLUÇÃO INICIAL */}
+                        <div className="diluicao-block">
+                            <h3>🧪 Solução Inicial</h3>
+                            <div className="input-group-sidebar">
+                                <label>Concentração (C1)</label>
+                                <input className="input-sidebar" type="number" placeholder="Ex: 1.5 M" value={dilC1} onChange={e => setDilC1(e.target.value)} />
+                            </div>
+                            <div className="input-group-sidebar">
+                                <label>Volume (V1)</label>
+                                <input className="input-sidebar" type="number" placeholder="Ex: 20 mL" value={dilV1} onChange={e => setDilV1(e.target.value)} />
+                            </div>
+                        </div>
+
+                        {/* SETA SEPARADORA */}
+                        <div className="diluicao-arrow">➔</div>
+
+                        {/* BLOCO 2: SOLUÇÃO FINAL */}
+                        <div className="diluicao-block">
+                            <h3>💧 Solução Final</h3>
+                            <div className="input-group-sidebar">
+                                <label>Concentração (C2)</label>
+                                <input className="input-sidebar" type="number" placeholder="-" value={dilC2} onChange={e => setDilC2(e.target.value)} />
+                            </div>
+                            <div className="input-group-sidebar">
+                                <label>Volume (V2)</label>
+                                <input className="input-sidebar" type="number" placeholder="-" value={dilV2} onChange={e => setDilV2(e.target.value)} />
+                            </div>
+                        </div>
+                    </div>
+
+                    <button className="btn-sidebar" style={{background: 'var(--primary)', color: 'white', marginTop: '25px', justifyContent: 'center', height: '50px', fontSize:'1.1rem'}} onClick={calcularDiluicao}>CALCULAR</button>
+             </div>
+        )}
 
         {activeTab === 'massa-molar' && (<div className="card" style={{maxWidth: '600px', margin: '0 auto'}}><h2>Massa Molar Automática</h2><p>Ex: H2SO4</p><div className="input-group-sidebar"><label>Fórmula</label><input className="input-sidebar" type="text" value={mmFormula} onChange={e => setMmFormula(e.target.value)} /></div><button className="btn-sidebar" onClick={calcMassaMolar}>CALCULAR</button>{mmResultado && (<div style={{marginTop:'20px', textAlign:'center'}}><h3>{mmResultado.formula}</h3><div style={{fontSize:'2.5rem', color:'var(--primary)'}}>{mmResultado.massa_molar} g/mol</div></div>)}</div>)}
 

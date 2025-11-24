@@ -210,9 +210,27 @@ td input:hover, td input:focus { border-color: var(--primary); background: var(-
 .sticky-col { position: sticky; left: 0; background-color: var(--bg-card); z-index: 1; border-right: 1px solid var(--border); }
 th.sticky-col { z-index: 3; background-color: var(--bg-body); }
 
-.color-picker { -webkit-appearance: none; border: none; width: 30px; height: 30px; border-radius: 50%; overflow: hidden; cursor: pointer; padding: 0; background: none; }
+/* --- COLOR PICKER ESTILIZADO --- */
+.color-picker { 
+  -webkit-appearance: none; 
+  appearance: none;
+  border: none; 
+  width: 40px; 
+  height: 40px; 
+  border-radius: 50%; 
+  overflow: hidden; 
+  cursor: pointer; 
+  padding: 0; 
+  background: none; 
+  box-shadow: 0 0 0 2px var(--border);
+  transition: transform 0.2s, box-shadow 0.2s;
+}
+.color-picker:hover {
+  transform: scale(1.1);
+  box-shadow: 0 0 0 2px var(--primary);
+}
 .color-picker::-webkit-color-swatch-wrapper { padding: 0; }
-.color-picker::-webkit-color-swatch { border: none; border-radius: 50%; border: 2px solid var(--border); }
+.color-picker::-webkit-color-swatch { border: none; border-radius: 50%; }
 
 /* --- 6. MODAL --- */
 .modal-overlay { 
@@ -260,99 +278,47 @@ body:not(.light-mode) {
   --hover-bg: #334155; 
 }
 
-/* --- 8. MOBILE (CELULAR - max-width 768px) --- */
-@media (max-width: 768px) {
-  .dashboard-layout {
-    flex-direction: column;
-  }
+/* --- 8. ESTILOS DA DILUIÇÃO (SEPARADA) --- */
+.diluicao-wrapper { display: flex; align-items: center; justify-content: space-between; gap: 20px; flex-wrap: wrap; margin-top: 20px; }
+.diluicao-block { flex: 1; background: var(--bg-input); padding: 20px; border-radius: 10px; border: 1px solid var(--border); min-width: 250px; }
+.diluicao-block h3 { margin-top: 0; margin-bottom: 15px; color: var(--primary); font-size: 1.1rem; border-bottom: 1px solid var(--border); padding-bottom: 10px; }
+.diluicao-arrow { font-size: 2rem; color: var(--text-muted); display: flex; align-items: center; }
+@media (max-width: 600px) { .diluicao-arrow { display: none; } .diluicao-wrapper { flex-direction: column; } }
 
+/* --- 9. CONFIGURAÇÕES DO PUXADOR DO MENU (CORRIGIDO) --- */
+/* IMPORTANTE: Por padrão, o puxador NÃO EXISTE no PC */
+.mobile-pull-handle { display: none; } 
+
+/* --- 10. MOBILE (CELULAR - max-width 768px) --- */
+@media (max-width: 768px) {
+  .dashboard-layout { flex-direction: column; }
   .sidebar {
-    position: fixed;
-    bottom: 0;
-    left: 0;
-    width: 100%;
-    min-width: 100%;
-    height: auto;
-    max-height: 85vh;
-    border-right: none;
-    border-top: 1px solid var(--border);
-    border-radius: 20px 20px 0 0;
-    padding-top: 0;
-    z-index: 1000;
-    background-color: var(--bg-sidebar); /* Garante que pegue a cor do tema */
-    
-    /* Efeito de Gaveta */
+    position: fixed; bottom: 0; left: 0; width: 100%; min-width: 100%; height: auto; max-height: 85vh;
+    border-right: none; border-top: 1px solid var(--border); border-radius: 20px 20px 0 0; padding-top: 0; z-index: 1000;
+    background-color: var(--bg-sidebar); /* CORRIGIDO: Fundo opaco para esconder o conteúdo atrás */
     transform: translateY(calc(100% - 45px)); 
     transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1);
     box-shadow: 0 -5px 25px rgba(0,0,0,0.3);
   }
+  .sidebar.mobile-open { transform: translateY(0); }
+  .sidebar .brand { display: none; }
 
-  .sidebar.mobile-open {
-    transform: translateY(0);
-  }
-
-  .sidebar .brand {
-    display: none; /* Oculta logo no menu mobile */
-  }
-
-  /* Puxador Transparente */
+  /* SÓ AGORA O PUXADOR APARECE (FLEX) */
   .mobile-pull-handle {
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    justify-content: center;
-    height: 45px;
-    background-color: transparent; /* CORREÇÃO: Transparente para mostrar a cor da sidebar */
-    border-radius: 20px 20px 0 0;
-    cursor: pointer;
-    width: 100%;
+    display: flex; flex-direction: column; align-items: center; justify-content: center; height: 45px;
+    background-color: transparent; /* Pega a cor da sidebar */
+    border-radius: 20px 20px 0 0; cursor: pointer; width: 100%;
   }
-
-  .handle-bar {
-    width: 40px;
-    height: 5px;
-    background-color: var(--text-muted);
-    border-radius: 10px;
-    margin-bottom: 4px;
-    opacity: 0.6;
-  }
-
-  .mobile-pull-handle span {
-    font-size: 0.7rem;
-    color: var(--text-muted);
-    text-transform: uppercase;
-    letter-spacing: 1px;
-    font-weight: bold;
-  }
-
-  .main-content {
-    margin-bottom: 60px;
-    height: auto;
-    overflow-y: visible;
-  }
-
-  .results-grid {
-    grid-template-columns: 1fr;
-  }
-  
-  .mobile-overlay {
-    position: fixed;
-    top: 0; left: 0; right: 0; bottom: 0;
-    background: rgba(0,0,0,0.6);
-    z-index: 999;
-    backdrop-filter: blur(3px);
-  }
+  .handle-bar { width: 40px; height: 5px; background-color: var(--text-muted); border-radius: 10px; margin-bottom: 4px; opacity: 0.6; }
+  .mobile-pull-handle span { font-size: 0.7rem; color: var(--text-muted); text-transform: uppercase; letter-spacing: 1px; font-weight: bold; }
+  .main-content { margin-bottom: 60px; height: auto; overflow-y: visible; }
+  .results-grid { grid-template-columns: 1fr; }
+  .mobile-overlay { position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: rgba(0,0,0,0.6); z-index: 999; backdrop-filter: blur(3px); }
 }
 
 /* --- 9. DESKTOP (PC - min-width 769px) --- */
 @media (min-width: 769px) {
-  .mobile-pull-handle {
-    display: none !important;
-  }
-  .mobile-overlay {
-    display: none !important;
-  }
-  .sidebar {
-    transform: none !important;
-  }
+  .mobile-pull-handle { display: none !important; }
+  .mobile-overlay { display: none !important; }
+  .sidebar { transform: none !important; }
 }
