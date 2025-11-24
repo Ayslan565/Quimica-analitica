@@ -42,7 +42,7 @@ body { margin: 0; overflow-x: hidden; font-family: 'Inter', sans-serif; }
 
 /* SIDEBAR */
 .sidebar {
-  width: 260px; min-width: 260px; background-color: var(--bg-panel);
+  width: 300px; min-width: 300px; background-color: var(--bg-panel);
   border-right: 1px solid var(--border); display: flex; flex-direction: column; z-index: 10;
   overflow-y: auto; /* Permite rolar se a sidebar for muito alta */
 }
