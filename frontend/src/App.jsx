@@ -13,11 +13,11 @@ const Plot = createPlotlyComponent.default
   ? createPlotlyComponent.default(Plotly) 
   : createPlotlyComponent(Plotly)
 
-// --- CONFIGURAÇÃO DA API ---
-// Se estiver em produção (Render), usa o link completo. 
-// Se estiver local, usa vazio (o Vite gerencia o proxy).
+// --- CONFIGURAÇÃO DA API (ATUALIZADA) ---
+// Se estiver em produção (Render), usa o link do seu backend.
+// Se estiver local, o Vite gerencia o proxy (vazio).
 const API_URL = import.meta.env.PROD 
-  ? 'https://SUA-API-NO-RENDER.onrender.com' // <--- COLOCAR SEU LINK DO RENDER AQUI DEPOIS
+  ? 'https://quimica-analitica.onrender.com' 
   : ''; 
 
 function App() {
@@ -147,8 +147,7 @@ function App() {
         return obj
       })
       
-      // --- AQUI ESTA A MUDANÇA PRINCIPAL ---
-      // Usa a variável API_URL definida no topo
+      // --- CHAMADA COM O LINK DO RENDER ---
       const res = await axios.post(`${API_URL}/experimental/calcular`, dadosLimpos) 
       
       setResultado(res.data)
@@ -222,7 +221,8 @@ function App() {
             </button>
           </div>
 
-          {/* --- ANÚNCIO SIDEBAR (Bloco Vertical/Quadrado) --- */}
+          {/* --- ANÚNCIO SIDEBAR --- */}
+          {/* Coloque seu ID do AdSense no lugar de 'SEU_ID...' se ja tiver */}
           <div className="menu-group">
              <AdBanner 
                 slotId="SEU_ID_BLOCO_VERTICAL" 
