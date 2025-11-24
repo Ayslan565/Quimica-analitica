@@ -2,7 +2,7 @@ import { useState, useEffect, useRef } from 'react'
 import axios from 'axios'
 import './App.css'
 
-// --- IMPORTAÇÃO DOS ANÚNCIOS ---
+// --- IMPORTAÇÃO DOS ANÚNCIOS (Não mexer) ---
 import AdBanner from './AdBanner'
 
 // --- IMPORTAÇÃO SEGURA DO PLOTLY ---
@@ -11,6 +11,9 @@ import createPlotlyComponent from 'react-plotly.js/factory'
 const Plot = createPlotlyComponent.default 
   ? createPlotlyComponent.default(Plotly) 
   : createPlotlyComponent(Plotly)
+
+// --- NOVA IMPORTAÇÃO: TABELA PERIÓDICA ---
+import TabelaPeriodica from './TabelaPeriodica'
 
 // --- CONFIGURAÇÃO DA API ---
 const API_URL = import.meta.env.PROD 
@@ -27,24 +30,24 @@ function App() {
   const [resultado, setResultado] = useState(null)
   const [status, setStatus] = useState("Aguardando dados...")
   
-  // --- ESTADOS: MOLARIDADE ---
-  const [molMassa, setMolMassa] = useState('')
-  const [molMM, setMolMM] = useState('')
-  const [molVol, setMolVol] = useState('')
-  const [molResultado, setMolResultado] = useState(null)
+  // --- ESTADOS: MOLARIDADE & DILUIÇÃO ---
+  const [molMassa, setMolMassa] = useState(''); const [molMM, setMolMM] = useState(''); const [molVol, setMolVol] = useState(''); const [molResultado, setMolResultado] = useState(null)
+  const [dilC1, setDilC1] = useState(''); const [dilV1, setDilV1] = useState(''); const [dilC2, setDilC2] = useState(''); const [dilV2, setDilV2] = useState('') 
 
-  // --- ESTADOS: DILUIÇÃO ---
-  const [dilC1, setDilC1] = useState('')
-  const [dilV1, setDilV1] = useState('')
-  const [dilC2, setDilC2] = useState('')
-  const [dilV2, setDilV2] = useState('') 
+  // --- NOVOS ESTADOS (FUNCIONALIDADES EXTRAS) ---
+  // 1. Massa Molar Automática
+  const [mmFormula, setMmFormula] = useState(''); const [mmResultado, setMmResultado] = useState(null)
+  
+  // 2. Preparo de Soluções
+  const [prepConc, setPrepConc] = useState(''); const [prepVol, setPrepVol] = useState(''); const [prepMM, setPrepMM] = useState(''); const [prepMassa, setPrepMassa] = useState(null)
+
+  // 3. Beer-Lambert
+  const [beerAbs, setBeerAbs] = useState(''); const [beerEpsilon, setBeerEpsilon] = useState(''); const [beerCaminho, setBeerCaminho] = useState('1'); const [beerConc, setBeerConc] = useState(null)
 
   // --- PERSONALIZAÇÃO ---
   const [isDarkMode, setIsDarkMode] = useState(true)
   const [accentColor, setAccentColor] = useState('#6366f1') 
   const [mostrarSeries, setMostrarSeries] = useState(true)
-  
-  // --- ESTILOS DO GRÁFICO ---
   const [grossuraMedia, setGrossuraMedia] = useState(4)
   const [grossuraGeralSeries, setGrossuraGeralSeries] = useState(2)
   const [customStyles, setCustomStyles] = useState({})
@@ -66,84 +69,43 @@ function App() {
     else document.body.classList.add('light-mode');
   }, [isDarkMode, accentColor]);
 
-  // --- FUNÇÕES DE CÁLCULO ---
-  const calcularMolaridade = () => {
-    const m = parseFloat(molMassa); const mm = parseFloat(molMM); const v = parseFloat(molVol);
-    if (m && mm && v) setMolResultado((m / (mm * (v / 1000))).toFixed(4));
+  // --- FUNÇÕES ANTIGAS ---
+  const calcularMolaridade = () => { const m = parseFloat(molMassa); const mm = parseFloat(molMM); const v = parseFloat(molVol); if (m && mm && v) setMolResultado((m / (mm * (v / 1000))).toFixed(4)); }
+  const calcularDiluicao = () => { 
+      const c1 = parseFloat(dilC1); const v1 = parseFloat(dilV1); const c2 = parseFloat(dilC2); const v2 = parseFloat(dilV2);
+      if (c1 && v1 && c2 && !v2) alert(`V2: ${((c1 * v1) / c2).toFixed(2)} mL`); 
+      else if (c1 && v1 && !c2 && v2) alert(`C2: ${((c1 * v1) / v2).toFixed(4)} M`);
+      else if (!c1 && v1 && c2 && v2) alert(`C1: ${((c2 * v2) / v1).toFixed(4)} M`);
+      else if (c1 && !v1 && c2 && v2) alert(`V1: ${((c2 * v2) / c1).toFixed(2)} mL`);
+      else alert("Preencha 3 campos!");
   }
 
-  const calcularDiluicao = () => {
-    const c1 = parseFloat(dilC1); const v1 = parseFloat(dilV1);
-    const c2 = parseFloat(dilC2); const v2 = parseFloat(dilV2);
-    let res = 0;
-    if (c1 && v1 && c2 && !v2) { res = (c1 * v1) / c2; alert(`V2: ${res.toFixed(2)} mL`); }
-    else if (c1 && v1 && !c2 && v2) { res = (c1 * v1) / v2; alert(`C2: ${res.toFixed(4)} M`); }
-    else if (!c1 && v1 && c2 && v2) { res = (c2 * v2) / v1; alert(`C1: ${res.toFixed(4)} M`); }
-    else if (c1 && !v1 && c2 && v2) { res = (c2 * v2) / c1; alert(`V1: ${res.toFixed(2)} mL`); }
-    else { alert("Preencha 3 campos!"); }
+  // --- NOVAS FUNÇÕES (CHAMADAS API) ---
+  const chamarAPI = async (endpoint, payload, setFunction) => {
+    try { const res = await axios.post(`${API_URL}/quimica/${endpoint}`, payload); if (res.data.erro) alert(res.data.erro); else setFunction(res.data); } catch (e) { alert("Erro na API"); console.error(e); }
   }
+  const calcMassaMolar = () => { if(!mmFormula) return; chamarAPI('massa-molar', { formula: mmFormula }, setMmResultado) }
+  const calcPreparo = () => { if(!prepConc || !prepVol || !prepMM) return; chamarAPI('preparo', { concentracao: parseFloat(prepConc), volume: parseFloat(prepVol), massa_molar: parseFloat(prepMM) }, setPrepMassa) }
+  const calcBeer = () => { if(!beerAbs || !beerEpsilon || !beerCaminho) return; chamarAPI('beer', { absorbancia: parseFloat(beerAbs), epsilon: parseFloat(beerEpsilon), caminho: parseFloat(beerCaminho) }, setBeerConc) }
 
-  // --- FUNÇÕES DE TABELA ---
-  const handlePaste = (e, rowIndexStart, colIndexStart, type) => {
-    e.preventDefault();
-    const pasteData = e.clipboardData.getData('text');
-    const rows = pasteData.split(/\r\n|\n|\r/).filter(row => row.trim() !== '');
-    const novasLinhas = [...linhas];
-    rows.forEach((row, i) => {
-      const currentRowIdx = rowIndexStart + i;
-      if (!novasLinhas[currentRowIdx]) novasLinhas[currentRowIdx] = {};
-      const cols = row.split('\t');
-      cols.forEach((val, j) => {
-        const cleanVal = val.trim().replace(',', '.');
-        if (type === 'vol') {
-          if (j === 0) novasLinhas[currentRowIdx].volume = cleanVal;
-          else { const phIndex = j - 1; if (phIndex < qtdColunas) novasLinhas[currentRowIdx][`ph${phIndex}`] = cleanVal; }
-        } else if (type === 'ph') {
-          const currentPhIdx = colIndexStart + j;
-          if (currentPhIdx < qtdColunas) novasLinhas[currentRowIdx][`ph${currentPhIdx}`] = cleanVal;
-        }
-      });
-    });
-    setLinhas(novasLinhas);
-  };
+  // --- FUNÇÕES DE TABELA (DADOS) ---
+  const handlePaste = (e, r, c, t) => { e.preventDefault(); const d = e.clipboardData.getData('text'); const rw = d.split(/\r\n|\n|\r/).filter(x => x.trim()); const nl = [...linhas]; rw.forEach((rx, i) => { const idx = r + i; if (!nl[idx]) nl[idx] = {}; const cls = rx.split('\t'); cls.forEach((val, j) => { const cv = val.trim().replace(',', '.'); if (t === 'vol') { if (j === 0) nl[idx].volume = cv; else if (j-1 < qtdColunas) nl[idx][`ph${j-1}`] = cv; } else if (t === 'ph' && c+j < qtdColunas) nl[idx][`ph${c+j}`] = cv; }); }); setLinhas(nl); };
   const addLinha = () => { setLinhas([...linhas, { volume: (parseFloat(linhas[linhas.length-1]?.volume)||0) + 1 }]) }
   const addColuna = () => setQtdColunas(qtdColunas + 1)
-  const confirmDelete = (tipo) => { setActionToDelete(tipo); setShowModal(true); }
-  const executeDelete = () => {
-    if (actionToDelete === 'row' && linhas.length > 1) { const novas = [...linhas]; novas.pop(); setLinhas(novas); }
-    else if (actionToDelete === 'col' && qtdColunas > 1) { setQtdColunas(qtdColunas - 1); }
-    setShowModal(false)
-  }
-  const handleChange = (index, chave, valor) => {
-    const novas = [...linhas]; if (!novas[index]) novas[index] = {}; novas[index][chave] = valor; setLinhas(novas);
-  }
+  const confirmDelete = (t) => { setActionToDelete(t); setShowModal(true); }
+  const executeDelete = () => { if (actionToDelete === 'row' && linhas.length > 1) { const n = [...linhas]; n.pop(); setLinhas(n); } else if (actionToDelete === 'col' && qtdColunas > 1) { setQtdColunas(qtdColunas - 1); } setShowModal(false) }
+  const handleChange = (i, k, v) => { const n = [...linhas]; if (!n[i]) n[i] = {}; n[i][k] = v; setLinhas(n); }
 
-  // --- CÁLCULO AUTOMÁTICO BLINDADO (USANDO REF) ---
+  // --- CÁLCULO AUTOMÁTICO DADOS (BLINDADO) ---
   const timeoutRef = useRef(null)
-
   const executarCalculoAPI = async () => {
     setStatus("Calculando...")
-    try {
-      const dadosLimpos = linhas.map(row => {
-        let obj = { volume: parseFloat(row.volume) }
-        for(let i=0; i < qtdColunas; i++){ if(row[`ph${i}`]) obj[`ph${i}`] = row[`ph${i}`] }
-        return obj
-      })
-      const res = await axios.post(`${API_URL}/experimental/calcular`, dadosLimpos) 
-      setResultado(res.data)
-      setStatus("Atualizado")
-    } catch (error) { 
-        console.error(error)
-        setStatus("Erro na API") 
-    }
+    try { const dt = linhas.map(r => { let o = { volume: parseFloat(r.volume) }; for(let i=0; i < qtdColunas; i++){ if(r[`ph${i}`]) o[`ph${i}`] = r[`ph${i}`] } return o }); const res = await axios.post(`${API_URL}/experimental/calcular`, dt); setResultado(res.data); setStatus("Atualizado") } catch (error) { console.error(error); setStatus("Erro na API") }
   }
-
   useEffect(() => {
     if(activeTab === 'dados') { 
         if (timeoutRef.current) clearTimeout(timeoutRef.current)
-        timeoutRef.current = setTimeout(() => {
-            executarCalculoAPI()
-        }, 1000)
+        timeoutRef.current = setTimeout(() => { executarCalculoAPI() }, 1000)
         return () => clearTimeout(timeoutRef.current)
     }
   }, [linhas, qtdColunas, activeTab]) 
@@ -153,31 +115,8 @@ function App() {
     if (!resultado) return []
     let traces = []
     const defaultColors = ['#4472C4', '#ED7D31', '#A5A5A5', '#FFC000', '#5B9BD5'];
-    if (mostrarSeries) {
-      for (let i = 0; i < qtdColunas; i++) {
-        const xData = []; const yData = []
-        linhas.forEach(row => {
-          if (row.volume !== undefined && row[`ph${i}`] !== undefined && row[`ph${i}`] !== "") {
-             xData.push(parseFloat(row.volume)); yData.push(parseFloat(String(row[`ph${i}`]).replace(',', '.')))
-          }
-        })
-        if (xData.length > 0) {
-          const style = customStyles[i] || {}
-          traces.push({
-            x: xData, y: yData, type: 'scatter', mode: 'lines+markers', name: `Série ${i + 1}`,
-            line: { color: style.color || defaultColors[i % defaultColors.length], width: style.width || grossuraGeralSeries, shape: 'spline' },
-            marker: { size: (style.width || grossuraGeralSeries) + 4 }, showlegend: true, opacity: 0.9, connectgaps: true
-          })
-        }
-      }
-    }
-    traces.push({
-      x: resultado.grafico.x, y: resultado.grafico.y, type: 'scatter', mode: 'lines+markers', name: nomeLegenda, 
-      line: {color: accentColor, width: grossuraMedia, shape: 'spline'},
-      marker: {color: isDarkMode ? '#fff' : '#000', size: grossuraMedia + 4, line: {color: accentColor, width: 2}},
-      error_y: { type: 'data', array: resultado.grafico.erro, visible: true, color: isDarkMode ? 'rgba(255,255,255,0.5)' : 'rgba(0,0,0,0.5)' },
-      connectgaps: true
-    })
+    if (mostrarSeries) { for (let i = 0; i < qtdColunas; i++) { const xData = []; const yData = []; linhas.forEach(row => { if (row.volume !== undefined && row[`ph${i}`] !== undefined && row[`ph${i}`] !== "") { xData.push(parseFloat(row.volume)); yData.push(parseFloat(String(row[`ph${i}`]).replace(',', '.'))) } }); if (xData.length > 0) { const style = customStyles[i] || {}; traces.push({ x: xData, y: yData, type: 'scatter', mode: 'lines+markers', name: `Série ${i + 1}`, line: { color: style.color || defaultColors[i % defaultColors.length], width: style.width || grossuraMedia, shape: 'spline' }, marker: { size: (style.width || grossuraMedia) + 4 }, showlegend: true, opacity: 0.9, connectgaps: true }) } } }
+    traces.push({ x: resultado.grafico.x, y: resultado.grafico.y, type: 'scatter', mode: 'lines+markers', name: nomeLegenda, line: {color: accentColor, width: grossuraMedia, shape: 'spline'}, marker: {color: isDarkMode ? '#fff' : '#000', size: grossuraMedia + 4, line: {color: accentColor, width: 2}}, error_y: { type: 'data', array: resultado.grafico.erro, visible: true, color: isDarkMode ? 'rgba(255,255,255,0.5)' : 'rgba(0,0,0,0.5)' }, connectgaps: true })
     return traces
   }
 
@@ -191,15 +130,17 @@ function App() {
             <button className={`btn-sidebar ${activeTab === 'dados' ? 'active' : ''}`} onClick={() => setActiveTab('dados')}>📉 Tratamento</button>
             <button className={`btn-sidebar ${activeTab === 'molaridade' ? 'active' : ''}`} onClick={() => setActiveTab('molaridade')}>🧪 Molaridade</button>
             <button className={`btn-sidebar ${activeTab === 'diluicao' ? 'active' : ''}`} onClick={() => setActiveTab('diluicao')}>💧 Diluição</button>
+            
+            <div className="menu-label" style={{marginTop:'10px'}}>Novas Funções</div>
+            <button className={`btn-sidebar ${activeTab === 'tabela' ? 'active' : ''}`} onClick={() => setActiveTab('tabela')}>🧩 Tabela Periódica</button>
+            <button className={`btn-sidebar ${activeTab === 'massa-molar' ? 'active' : ''}`} onClick={() => setActiveTab('massa-molar')}>🧬 Massa Molar</button>
+            <button className={`btn-sidebar ${activeTab === 'solucoes' ? 'active' : ''}`} onClick={() => setActiveTab('solucoes')}>⚗️ Preparo Sol.</button>
+            <button className={`btn-sidebar ${activeTab === 'espectro' ? 'active' : ''}`} onClick={() => setActiveTab('espectro')}>🌈 Beer-Lambert</button>
           </div>
 
-          {/* --- ANÚNCIO SIDEBAR (QUADRO) --- */}
+          {/* --- ANÚNCIO SIDEBAR (MANTIDO INTACTO) --- */}
           <div className="menu-group">
-             {/* ID DO SEU BLOCO LATERAL */}
-             <AdBanner 
-                slotId="8301937517" 
-                style={{minHeight: '250px', width: '100%', display: 'block'}} 
-             /> 
+             <AdBanner slotId="8301937517" style={{minHeight: '250px', width: '100%', display: 'block'}} /> 
           </div>
 
           {activeTab === 'dados' && (
@@ -235,14 +176,10 @@ function App() {
 
       <main className="main-content">
         
-        {/* --- ANÚNCIO TOPO (HORIZONTAL) --- */}
-        {/* JÁ INSERI O ID '2103376582' AQUI PARA NÃO DAR ERRO */}
-        <AdBanner 
-            slotId="2103376582" 
-            format="horizontal" 
-            style={{marginBottom: '20px', minHeight: '90px', width: '100%', display: 'block'}} 
-        />
+        {/* --- ANÚNCIO TOPO (MANTIDO INTACTO) --- */}
+        <AdBanner slotId="2103376582" format="horizontal" style={{marginBottom: '20px', minHeight: '90px', width: '100%', display: 'block'}} />
         
+        {/* --- ABA: DADOS (MANTIDA) --- */}
         {activeTab === 'dados' && (
             <>
                 <header className="header-info">
@@ -267,28 +204,12 @@ function App() {
                 {resultado && (
                 <div className="results-grid">
                     <div className="card">
-                    <Plot
-                        data={gerarDadosGrafico()}
-                        layout={{
-                        title: { text: tituloGrafico, font: { size: 20, color: isDarkMode ? '#f8fafc' : '#1e293b', family: 'Arial' } },
-                        autosize: true, height: 450,
-                        paper_bgcolor: 'transparent', plot_bgcolor: 'transparent',
-                        font: {color: isDarkMode ? '#94a3b8' : '#475569'},
-                        margin: {l: 70, r: 30, t: 80, b: 100},
-                        xaxis: { title: { text: eixoX, font: {size:14} }, gridcolor: isDarkMode ? '#334155' : '#e2e8f0', zerolinecolor: '#334155' },
-                        yaxis: { title: { text: eixoY, font: {size:14} }, gridcolor: isDarkMode ? '#334155' : '#e2e8f0', zerolinecolor: '#334155' },
-                        legend: { orientation: 'h', y: -0.3 }
-                        }}
-                        useResizeHandler={true} style={{width: '100%'}}
-                    />
+                    <Plot data={gerarDadosGrafico()} useResizeHandler={true} style={{width: '100%'}} layout={{ title: { text: tituloGrafico, font: { size: 20, color: isDarkMode ? '#f8fafc' : '#1e293b', family: 'Arial' } }, autosize: true, height: 450, paper_bgcolor: 'transparent', plot_bgcolor: 'transparent', font: {color: isDarkMode ? '#94a3b8' : '#475569'}, margin: {l: 70, r: 30, t: 80, b: 100}, xaxis: { title: { text: eixoX, font: {size:14} }, gridcolor: isDarkMode ? '#334155' : '#e2e8f0', zerolinecolor: '#334155' }, yaxis: { title: { text: eixoY, font: {size:14} }, gridcolor: isDarkMode ? '#334155' : '#e2e8f0', zerolinecolor: '#334155' }, legend: { orientation: 'h', y: -0.3 } }} />
                     </div>
                     <div className="card">
                     <h3>Estatística</h3>
                     {resultado.tabela.map((row, k) => (
-                        <div key={k} className="data-row">
-                        <span>{row.volume} {eixoX.toLowerCase().includes('ml') ? 'mL' : ''}</span>
-                        <span><strong>{row.media}</strong> <small> (±{row.desvio})</small></span>
-                        </div>
+                        <div key={k} className="data-row"><span>{row.volume} {eixoX.toLowerCase().includes('ml') ? 'mL' : ''}</span><span><strong>{row.media}</strong> <small> (±{row.desvio})</small></span></div>
                     ))}
                     </div>
                 </div>
@@ -296,8 +217,10 @@ function App() {
             </>
         )}
         
+        {/* --- ABAS ANTIGAS --- */}
         {activeTab === 'molaridade' && (
              <div className="card" style={{maxWidth: '600px', margin: '0 auto'}}>
+                    <h2>Calculadora de Molaridade</h2>
                     <div className="input-group-sidebar"><label>Massa do Soluto (g)</label><input className="input-sidebar" type="number" value={molMassa} onChange={e => setMolMassa(e.target.value)} /></div>
                     <div className="input-group-sidebar"><label>Massa Molar (g/mol)</label><input className="input-sidebar" type="number" value={molMM} onChange={e => setMolMM(e.target.value)} /></div>
                     <div className="input-group-sidebar"><label>Volume da Solução (mL)</label><input className="input-sidebar" type="number" value={molVol} onChange={e => setMolVol(e.target.value)} /></div>
@@ -307,6 +230,7 @@ function App() {
         )}
          {activeTab === 'diluicao' && (
              <div className="card" style={{maxWidth: '800px', margin: '0 auto'}}>
+                    <h2>Calculadora de Diluição</h2>
                     <p style={{color: 'var(--text-muted)', marginBottom: '20px'}}>Preencha 3 campos e deixe vazio o que você quer descobrir.</p>
                     <div style={{display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '20px'}}>
                         <div className="input-group-sidebar"><label>C1</label><input className="input-sidebar" type="number" value={dilC1} onChange={e => setDilC1(e.target.value)} /></div>
@@ -317,9 +241,74 @@ function App() {
                     <button className="btn-sidebar" style={{background: 'var(--primary)', color: 'white', marginTop: '20px', justifyContent: 'center'}} onClick={calcularDiluicao}>CALCULAR</button>
              </div>
         )}
+
+        {/* --- NOVAS ABAS --- */}
+        
+        {/* 0. TABELA PERIÓDICA (NOVA) */}
+        {activeTab === 'tabela' && (
+            <TabelaPeriodica apiUrl={API_URL} />
+        )}
+
+        {/* 1. MASSA MOLAR */}
+        {activeTab === 'massa-molar' && (
+            <div className="card" style={{maxWidth: '600px', margin: '0 auto'}}>
+                <h2>Calculadora de Massa Molar</h2>
+                <p>Digite a fórmula química (Ex: H2SO4, NaCl)</p>
+                <div className="input-group-sidebar"><label>Fórmula</label><input className="input-sidebar" type="text" value={mmFormula} onChange={e => setMmFormula(e.target.value)} placeholder="Ex: H2O" /></div>
+                <button className="btn-sidebar" style={{background: 'var(--primary)', color: 'white', marginTop: '20px', justifyContent: 'center'}} onClick={calcMassaMolar}>CALCULAR</button>
+                
+                {mmResultado && mmResultado.massa_molar && (
+                    <div style={{marginTop: '30px', textAlign: 'center', padding: '20px', background: 'var(--bg-body)', borderRadius: '8px'}}>
+                        <h3 style={{margin:0, color: 'var(--text-muted)'}}>{mmResultado.formula}</h3>
+                        <div style={{fontSize: '3rem', fontWeight: 'bold', color: 'var(--primary)'}}>{mmResultado.massa_molar} <span style={{fontSize: '1.5rem'}}>g/mol</span></div>
+                        <div style={{textAlign:'left', marginTop:'15px', fontSize:'0.9rem', color:'var(--text-muted)'}}>
+                            {mmResultado.detalhes && mmResultado.detalhes.map((d, i) => <div key={i}>• {d}</div>)}
+                        </div>
+                    </div>
+                )}
+            </div>
+        )}
+
+        {/* 2. PREPARO DE SOLUÇÕES */}
+        {activeTab === 'solucoes' && (
+            <div className="card" style={{maxWidth: '600px', margin: '0 auto'}}>
+                <h2>Preparo de Soluções (Sólido)</h2>
+                <p>Descubra quanto pesar para obter a solução desejada.</p>
+                <div className="input-group-sidebar"><label>Concentração Desejada (mol/L)</label><input className="input-sidebar" type="number" value={prepConc} onChange={e => setPrepConc(e.target.value)} /></div>
+                <div className="input-group-sidebar"><label>Volume Final (mL)</label><input className="input-sidebar" type="number" value={prepVol} onChange={e => setPrepVol(e.target.value)} /></div>
+                <div className="input-group-sidebar"><label>Massa Molar (g/mol)</label><input className="input-sidebar" type="number" value={prepMM} onChange={e => setPrepMM(e.target.value)} placeholder="Ex: 58.44 (NaCl)" /></div>
+                <button className="btn-sidebar" style={{background: 'var(--primary)', color: 'white', marginTop: '20px', justifyContent: 'center'}} onClick={calcPreparo}>CALCULAR MASSA</button>
+                
+                {prepMassa && (
+                    <div style={{marginTop: '30px', textAlign: 'center', padding: '20px', background: 'var(--bg-body)', borderRadius: '8px'}}>
+                        <h3 style={{margin:0, color: 'var(--text-muted)'}}>Massa a Pesar</h3>
+                        <div style={{fontSize: '3rem', fontWeight: 'bold', color: 'var(--primary)'}}>{prepMassa.massa_necessaria} <span style={{fontSize: '1.5rem'}}>g</span></div>
+                    </div>
+                )}
+            </div>
+        )}
+
+        {/* 3. BEER-LAMBERT */}
+        {activeTab === 'espectro' && (
+            <div className="card" style={{maxWidth: '600px', margin: '0 auto'}}>
+                <h2>Lei de Beer-Lambert</h2>
+                <p>A = ε . l . c</p>
+                <div className="input-group-sidebar"><label>Absorbância (A)</label><input className="input-sidebar" type="number" value={beerAbs} onChange={e => setBeerAbs(e.target.value)} /></div>
+                <div className="input-group-sidebar"><label>Coeficiente (ε)</label><input className="input-sidebar" type="number" value={beerEpsilon} onChange={e => setBeerEpsilon(e.target.value)} /></div>
+                <div className="input-group-sidebar"><label>Caminho (cm)</label><input className="input-sidebar" type="number" value={beerCaminho} onChange={e => setBeerCaminho(e.target.value)} /></div>
+                <button className="btn-sidebar" style={{background: 'var(--primary)', color: 'white', marginTop: '20px', justifyContent: 'center'}} onClick={calcBeer}>CALCULAR CONCENTRAÇÃO</button>
+                
+                {beerConc && (
+                    <div style={{marginTop: '30px', textAlign: 'center', padding: '20px', background: 'var(--bg-body)', borderRadius: '8px'}}>
+                        <h3 style={{margin:0, color: 'var(--text-muted)'}}>Concentração Calculada</h3>
+                        <div style={{fontSize: '3rem', fontWeight: 'bold', color: 'var(--primary)'}}>{beerConc.concentracao} <span style={{fontSize: '1.5rem'}}>mol/L</span></div>
+                    </div>
+                )}
+            </div>
+        )}
         
       </main>
-      {showModal && (<div className="modal-overlay"><div className="modal"><h2>Confirmar</h2><p>Deseja excluir?</p><div className="modal-actions"><button className="btn-cancel" onClick={() => setShowModal(false)}>Cancelar</button><button className="btn-confirm" onClick={executeDelete}>Excluir</button></div></div></div>)}
+      {showModal && (<div className="modal-overlay"><div className="modal"><h2>Confirmar</h2><div className="modal-actions"><button className="btn-cancel" onClick={() => setShowModal(false)}>Cancelar</button><button className="btn-confirm" onClick={executeDelete}>Excluir</button></div></div></div>)}
     </div>
   )
 }

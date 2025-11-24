@@ -1,0 +1,99 @@
+.tabela-container {
+    padding: 20px;
+    width: 100%;
+}
+
+.tabela-header {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    margin-bottom: 20px;
+    gap: 10px;
+}
+
+.tabela-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(100px, 1fr));
+    gap: 10px;
+    margin-top: 20px;
+}
+
+.elemento-card {
+    background: var(--bg-card);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 10px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    cursor: pointer;
+    transition: transform 0.2s, border-color 0.2s;
+    position: relative;
+}
+
+.elemento-card:hover {
+    transform: translateY(-2px);
+    border-color: var(--primary);
+    background: var(--primary-soft);
+}
+
+.elemento-card .numero {
+    font-size: 0.8rem;
+    color: var(--text-muted);
+    position: absolute;
+    top: 5px;
+    left: 8px;
+}
+
+.elemento-card .simbolo {
+    font-size: 1.8rem;
+    color: var(--primary);
+    margin: 5px 0;
+}
+
+.elemento-card .nome {
+    font-size: 0.8rem;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    max-width: 100%;
+}
+
+/* Modal de Detalhes */
+.elemento-detalhe-modal {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100vw;
+    height: 100vh;
+    background: rgba(0,0,0,0.7);
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    z-index: 1000;
+    backdrop-filter: blur(3px);
+}
+
+.modal-content {
+    background: var(--bg-body);
+    padding: 30px;
+    border-radius: 12px;
+    border: 1px solid var(--border);
+    min-width: 300px;
+    max-width: 500px;
+    text-align: center;
+    box-shadow: 0 10px 25px rgba(0,0,0,0.5);
+}
+
+.detalhes-grid {
+    display: grid;
+    gap: 10px;
+    margin: 20px 0;
+    text-align: left;
+}
+
+.detalhe-item {
+    padding: 10px;
+    background: rgba(255,255,255,0.05);
+    border-radius: 6px;
+}
