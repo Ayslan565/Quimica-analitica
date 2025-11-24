@@ -2,15 +2,26 @@ import { useState, useEffect, useCallback } from 'react'
 import axios from 'axios'
 import './App.css'
 
-// IMPORTAÇÃO SEGURA DO PLOTLY
+// --- IMPORTAÇÃO DOS ANÚNCIOS ---
+// Certifique-se de que o arquivo AdBanner.jsx existe na pasta src
+import AdBanner from './AdBanner'
+
+// --- IMPORTAÇÃO SEGURA DO PLOTLY ---
 import Plotly from 'plotly.js-dist-min'
 import createPlotlyComponent from 'react-plotly.js/factory'
 const Plot = createPlotlyComponent.default 
   ? createPlotlyComponent.default(Plotly) 
   : createPlotlyComponent(Plotly)
 
+// --- CONFIGURAÇÃO DA API ---
+// Se estiver em produção (Render), usa o link completo. 
+// Se estiver local, usa vazio (o Vite gerencia o proxy).
+const API_URL = import.meta.env.PROD 
+  ? 'https://SUA-API-NO-RENDER.onrender.com' // <--- COLOCAR SEU LINK DO RENDER AQUI DEPOIS
+  : ''; 
+
 function App() {
-  // --- NAVEGAÇÃO (NOVO!) ---
+  // --- NAVEGAÇÃO ---
   const [activeTab, setActiveTab] = useState('dados') // 'dados', 'molaridade', 'diluicao'
 
   // --- ESTADOS: TRATAMENTO DE DADOS ---
@@ -135,15 +146,21 @@ function App() {
         for(let i=0; i < qtdColunas; i++){ if(row[`ph${i}`]) obj[`ph${i}`] = row[`ph${i}`] }
         return obj
       })
-      // ATENÇÃO: Link relativo para funcionar no deploy/ngrok
-      const res = await axios.post('/experimental/calcular', dadosLimpos) 
+      
+      // --- AQUI ESTA A MUDANÇA PRINCIPAL ---
+      // Usa a variável API_URL definida no topo
+      const res = await axios.post(`${API_URL}/experimental/calcular`, dadosLimpos) 
+      
       setResultado(res.data)
       setStatus("Atualizado")
-    } catch (error) { setStatus("Aguardando...") }
+    } catch (error) { 
+        console.error(error)
+        setStatus("Erro na API") 
+    }
   }, [linhas, qtdColunas])
 
   useEffect(() => {
-    if(activeTab === 'dados') { // Só calcula se estiver na aba de dados
+    if(activeTab === 'dados') { 
         const timer = setTimeout(() => calcular(), 800)
         return () => clearTimeout(timer)
     }
@@ -191,7 +208,7 @@ function App() {
         <div className="brand">🧪 LabData Pro</div>
         <div className="sidebar-content">
           
-          {/* --- MENU DE NAVEGAÇÃO (Abas) --- */}
+          {/* --- MENU DE NAVEGAÇÃO --- */}
           <div className="menu-group">
             <div className="menu-label">Ferramentas</div>
             <button className={`btn-sidebar ${activeTab === 'dados' ? 'active' : ''}`} onClick={() => setActiveTab('dados')}>
@@ -203,6 +220,14 @@ function App() {
             <button className={`btn-sidebar ${activeTab === 'diluicao' ? 'active' : ''}`} onClick={() => setActiveTab('diluicao')}>
                 💧 Diluição
             </button>
+          </div>
+
+          {/* --- ANÚNCIO SIDEBAR (Bloco Vertical/Quadrado) --- */}
+          <div className="menu-group">
+             <AdBanner 
+                slotId="SEU_ID_BLOCO_VERTICAL" 
+                style={{minHeight: '250px'}} 
+             /> 
           </div>
 
           {/* --- CONTROLES (Só aparecem na aba DADOS) --- */}
@@ -242,7 +267,14 @@ function App() {
 
       <main className="main-content">
         
-        {/* --- ABA 1: TRATAMENTO DE DADOS (O que você já tinha) --- */}
+        {/* --- ANÚNCIO TOPO (Banner Horizontal) --- */}
+        <AdBanner 
+            slotId="SEU_ID_BLOCO_HORIZONTAL" 
+            format="horizontal" 
+            style={{marginBottom: '20px', minHeight: '90px'}} 
+        />
+
+        {/* --- ABA 1: TRATAMENTO DE DADOS --- */}
         {activeTab === 'dados' && (
             <>
                 <header className="header-info">
