@@ -11,6 +11,17 @@
     gap: 10px;
 }
 
+/* Estilo do Seletor de Idioma */
+.select-idioma {
+    padding: 5px 10px;
+    border-radius: 6px;
+    background-color: var(--bg-card);
+    color: var(--text-main);
+    border: 1px solid var(--border);
+    cursor: pointer;
+    font-size: 0.9rem;
+}
+
 .tabela-grid {
     display: grid;
     grid-template-columns: repeat(auto-fill, minmax(100px, 1fr));

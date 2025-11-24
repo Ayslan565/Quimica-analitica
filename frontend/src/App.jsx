@@ -23,6 +23,9 @@ const API_URL = import.meta.env.PROD
 function App() {
   // --- NAVEGAÇÃO ---
   const [activeTab, setActiveTab] = useState('dados')
+  
+  // --- ESTADO MENU MOBILE (NOVO) ---
+  const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false)
 
   // --- ESTADOS: TRATAMENTO DE DADOS ---
   const [qtdColunas, setQtdColunas] = useState(3)
@@ -35,13 +38,8 @@ function App() {
   const [dilC1, setDilC1] = useState(''); const [dilV1, setDilV1] = useState(''); const [dilC2, setDilC2] = useState(''); const [dilV2, setDilV2] = useState('') 
 
   // --- NOVOS ESTADOS (FUNCIONALIDADES EXTRAS) ---
-  // 1. Massa Molar Automática
   const [mmFormula, setMmFormula] = useState(''); const [mmResultado, setMmResultado] = useState(null)
-  
-  // 2. Preparo de Soluções
   const [prepConc, setPrepConc] = useState(''); const [prepVol, setPrepVol] = useState(''); const [prepMM, setPrepMM] = useState(''); const [prepMassa, setPrepMassa] = useState(null)
-
-  // 3. Beer-Lambert
   const [beerAbs, setBeerAbs] = useState(''); const [beerEpsilon, setBeerEpsilon] = useState(''); const [beerCaminho, setBeerCaminho] = useState('1'); const [beerConc, setBeerConc] = useState(null)
 
   // --- PERSONALIZAÇÃO ---
@@ -122,64 +120,65 @@ function App() {
 
   return (
     <div className="dashboard-layout">
-      <aside className="sidebar">
+      
+      {/* --- SIDEBAR (MENU) --- */}
+      {/* No mobile, ela ganha a classe 'mobile-open' quando aberta */}
+      <aside className={`sidebar ${isMobileMenuOpen ? 'mobile-open' : ''}`}>
+        
+        {/* PUXADOR DO MOBILE (SÓ APARECE NO CELULAR) */}
+        <div className="mobile-pull-handle" onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}>
+            <div className="handle-bar"></div>
+            <span>{isMobileMenuOpen ? 'Fechar Menu' : 'Abrir Menu'}</span>
+        </div>
+
         <div className="brand">🧪 LabData Pro</div>
+        
         <div className="sidebar-content">
-          <div className="menu-group">
-            <div className="menu-label">Ferramentas</div>
-            <button className={`btn-sidebar ${activeTab === 'dados' ? 'active' : ''}`} onClick={() => setActiveTab('dados')}>📉 Tratamento</button>
-            <button className={`btn-sidebar ${activeTab === 'molaridade' ? 'active' : ''}`} onClick={() => setActiveTab('molaridade')}>🧪 Molaridade</button>
-            <button className={`btn-sidebar ${activeTab === 'diluicao' ? 'active' : ''}`} onClick={() => setActiveTab('diluicao')}>💧 Diluição</button>
-            
-            <div className="menu-label" style={{marginTop:'10px'}}>Novas Funções</div>
-            <button className={`btn-sidebar ${activeTab === 'tabela' ? 'active' : ''}`} onClick={() => setActiveTab('tabela')}>🧩 Tabela Periódica</button>
-            <button className={`btn-sidebar ${activeTab === 'massa-molar' ? 'active' : ''}`} onClick={() => setActiveTab('massa-molar')}>🧬 Massa Molar</button>
-            <button className={`btn-sidebar ${activeTab === 'solucoes' ? 'active' : ''}`} onClick={() => setActiveTab('solucoes')}>⚗️ Preparo Sol.</button>
-            <button className={`btn-sidebar ${activeTab === 'espectro' ? 'active' : ''}`} onClick={() => setActiveTab('espectro')}>🌈 Beer-Lambert</button>
+          {/* --- TEMA --- */}
+          <div className="menu-group" style={{marginBottom: '20px'}}>
+             <div className="setting-item"><span>Tema</span><button className="theme-toggle" onClick={() => setIsDarkMode(!isDarkMode)}>{isDarkMode ? '🌙' : '☀️'}</button></div>
           </div>
 
-          {/* --- ANÚNCIO SIDEBAR (MANTIDO INTACTO) --- */}
+          <div className="menu-group">
+            <div className="menu-label">Ferramentas</div>
+            <button className={`btn-sidebar ${activeTab === 'dados' ? 'active' : ''}`} onClick={() => {setActiveTab('dados'); setIsMobileMenuOpen(false)}}>📉 Tratamento</button>
+            <button className={`btn-sidebar ${activeTab === 'molaridade' ? 'active' : ''}`} onClick={() => {setActiveTab('molaridade'); setIsMobileMenuOpen(false)}}>🧪 Molaridade</button>
+            <button className={`btn-sidebar ${activeTab === 'diluicao' ? 'active' : ''}`} onClick={() => {setActiveTab('diluicao'); setIsMobileMenuOpen(false)}}>💧 Diluição</button>
+            
+            <div className="menu-label" style={{marginTop:'10px'}}>Novas Funções</div>
+            <button className={`btn-sidebar ${activeTab === 'tabela' ? 'active' : ''}`} onClick={() => {setActiveTab('tabela'); setIsMobileMenuOpen(false)}}>🧩 Tabela Periódica</button>
+            <button className={`btn-sidebar ${activeTab === 'massa-molar' ? 'active' : ''}`} onClick={() => {setActiveTab('massa-molar'); setIsMobileMenuOpen(false)}}>🧬 Massa Molar</button>
+            <button className={`btn-sidebar ${activeTab === 'solucoes' ? 'active' : ''}`} onClick={() => {setActiveTab('solucoes'); setIsMobileMenuOpen(false)}}>⚗️ Preparo Sol.</button>
+            <button className={`btn-sidebar ${activeTab === 'espectro' ? 'active' : ''}`} onClick={() => {setActiveTab('espectro'); setIsMobileMenuOpen(false)}}>🌈 Beer-Lambert</button>
+          </div>
+
           <div className="menu-group">
              <AdBanner slotId="8301937517" style={{minHeight: '250px', width: '100%', display: 'block'}} /> 
           </div>
 
           {activeTab === 'dados' && (
-            <>
-                <div className="menu-group" style={{borderTop: '1px solid var(--border)', paddingTop: '15px'}}>
-                    <div className="menu-label">Estrutura</div>
-                    <button className="btn-sidebar" onClick={addLinha}><span>➕</span> Add Linha</button>
-                    <button className="btn-sidebar" onClick={addColuna}><span>➕</span> Add Coluna</button>
-                    <div style={{display:'flex', gap:'5px', marginTop:'5px'}}>
-                        <button className="btn-sidebar danger small" onClick={() => confirmDelete('row')}>- Linha</button>
-                        <button className="btn-sidebar danger small" onClick={() => confirmDelete('col')}>- Coluna</button>
-                    </div>
+            <div className="menu-group settings-group">
+                <div className="menu-label">Gráfico</div>
+                <div className="setting-item"><span>Mostrar Séries</span><button className="theme-toggle" onClick={() => setMostrarSeries(!mostrarSeries)}>{mostrarSeries ? '👁️ ON' : '🚫 OFF'}</button></div>
+                <div className="input-group-sidebar"><label>Título</label><input className="input-sidebar" value={tituloGrafico} onChange={e => setTituloGrafico(e.target.value)} /></div>
+                <div className="input-group-sidebar"><label>Eixo X</label><input className="input-sidebar" value={eixoX} onChange={e => setEixoX(e.target.value)} /></div>
+                <div className="input-group-sidebar"><label>Eixo Y</label><input className="input-sidebar" value={eixoY} onChange={e => setEixoY(e.target.value)} /></div>
+                <div className="setting-item"><span>Cor Média</span><input type="color" value={accentColor} onChange={(e) => setAccentColor(e.target.value)} className="color-picker"/></div>
+                <div className="input-group-sidebar">
+                    <label style={{display:'flex', justifyContent:'space-between'}}>Grossura <span>{grossuraMedia}px</span></label>
+                    <input type="range" min="1" max="10" value={grossuraMedia} onChange={(e) => setGrossuraMedia(parseInt(e.target.value))} style={{width:'100%'}} />
                 </div>
-                <div className="menu-group settings-group">
-                    <div className="menu-label">Gráfico</div>
-                    <div className="setting-item"><span>Mostrar Séries</span><button className="theme-toggle" onClick={() => setMostrarSeries(!mostrarSeries)}>{mostrarSeries ? '👁️ ON' : '🚫 OFF'}</button></div>
-                    <div className="input-group-sidebar"><label>Título</label><input className="input-sidebar" value={tituloGrafico} onChange={e => setTituloGrafico(e.target.value)} /></div>
-                    <div className="input-group-sidebar"><label>Eixo X</label><input className="input-sidebar" value={eixoX} onChange={e => setEixoX(e.target.value)} /></div>
-                    <div className="input-group-sidebar"><label>Eixo Y</label><input className="input-sidebar" value={eixoY} onChange={e => setEixoY(e.target.value)} /></div>
-                    <div className="setting-item"><span>Cor Média</span><input type="color" value={accentColor} onChange={(e) => setAccentColor(e.target.value)} className="color-picker"/></div>
-                    <div className="input-group-sidebar">
-                        <label style={{display:'flex', justifyContent:'space-between'}}>Grossura <span>{grossuraMedia}px</span></label>
-                        <input type="range" min="1" max="10" value={grossuraMedia} onChange={(e) => setGrossuraMedia(parseInt(e.target.value))} style={{width:'100%'}} />
-                    </div>
-                </div>
-            </>
+            </div>
           )}
-          <div className="menu-group" style={{marginTop: 'auto'}}>
-             <div className="setting-item"><span>Tema</span><button className="theme-toggle" onClick={() => setIsDarkMode(!isDarkMode)}>{isDarkMode ? '🌙' : '☀️'}</button></div>
-          </div>
         </div>
       </aside>
 
+      {/* Overlay escuro para fechar o menu clicando fora (Mobile) */}
+      {isMobileMenuOpen && <div className="mobile-overlay" onClick={() => setIsMobileMenuOpen(false)}></div>}
+
       <main className="main-content">
-        
-        {/* --- ANÚNCIO TOPO (MANTIDO INTACTO) --- */}
         <AdBanner slotId="2103376582" format="horizontal" style={{marginBottom: '20px', minHeight: '90px', width: '100%', display: 'block'}} />
         
-        {/* --- ABA: DADOS (MANTIDA) --- */}
         {activeTab === 'dados' && (
             <>
                 <header className="header-info">
@@ -217,96 +216,19 @@ function App() {
             </>
         )}
         
-        {/* --- ABAS ANTIGAS --- */}
-        {activeTab === 'molaridade' && (
-             <div className="card" style={{maxWidth: '600px', margin: '0 auto'}}>
-                    <h2>Calculadora de Molaridade</h2>
-                    <div className="input-group-sidebar"><label>Massa do Soluto (g)</label><input className="input-sidebar" type="number" value={molMassa} onChange={e => setMolMassa(e.target.value)} /></div>
-                    <div className="input-group-sidebar"><label>Massa Molar (g/mol)</label><input className="input-sidebar" type="number" value={molMM} onChange={e => setMolMM(e.target.value)} /></div>
-                    <div className="input-group-sidebar"><label>Volume da Solução (mL)</label><input className="input-sidebar" type="number" value={molVol} onChange={e => setMolVol(e.target.value)} /></div>
-                    <button className="btn-sidebar" style={{background: 'var(--primary)', color: 'white', marginTop: '20px', justifyContent: 'center'}} onClick={calcularMolaridade}>CALCULAR</button>
-                    {molResultado && (<div style={{marginTop: '30px', textAlign: 'center', padding: '20px', background: 'var(--bg-body)', borderRadius: '8px'}}><h3 style={{margin:0, color: 'var(--text-muted)'}}>Concentração Molar</h3><div style={{fontSize: '3rem', fontWeight: 'bold', color: 'var(--primary)'}}>{molResultado} <span style={{fontSize: '1.5rem'}}>mol/L</span></div></div>)}
-            </div>
-        )}
-         {activeTab === 'diluicao' && (
-             <div className="card" style={{maxWidth: '800px', margin: '0 auto'}}>
-                    <h2>Calculadora de Diluição</h2>
-                    <p style={{color: 'var(--text-muted)', marginBottom: '20px'}}>Preencha 3 campos e deixe vazio o que você quer descobrir.</p>
-                    <div style={{display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '20px'}}>
-                        <div className="input-group-sidebar"><label>C1</label><input className="input-sidebar" type="number" value={dilC1} onChange={e => setDilC1(e.target.value)} /></div>
-                        <div className="input-group-sidebar"><label>V1</label><input className="input-sidebar" type="number" value={dilV1} onChange={e => setDilV1(e.target.value)} /></div>
-                        <div className="input-group-sidebar"><label>C2</label><input className="input-sidebar" type="number" value={dilC2} onChange={e => setDilC2(e.target.value)} /></div>
-                        <div className="input-group-sidebar"><label>V2</label><input className="input-sidebar" type="number" value={dilV2} onChange={e => setDilV2(e.target.value)} /></div>
-                    </div>
-                    <button className="btn-sidebar" style={{background: 'var(--primary)', color: 'white', marginTop: '20px', justifyContent: 'center'}} onClick={calcularDiluicao}>CALCULAR</button>
-             </div>
-        )}
-
         {/* --- NOVAS ABAS --- */}
+        {activeTab === 'tabela' && <TabelaPeriodica apiUrl={API_URL} />}
+
+        {activeTab === 'molaridade' && (<div className="card" style={{maxWidth: '600px', margin: '0 auto'}}><h2>Molaridade</h2><div className="input-group-sidebar"><label>Massa (g)</label><input className="input-sidebar" type="number" value={molMassa} onChange={e => setMolMassa(e.target.value)} /></div><div className="input-group-sidebar"><label>MM (g/mol)</label><input className="input-sidebar" type="number" value={molMM} onChange={e => setMolMM(e.target.value)} /></div><div className="input-group-sidebar"><label>Vol (mL)</label><input className="input-sidebar" type="number" value={molVol} onChange={e => setMolVol(e.target.value)} /></div><button className="btn-sidebar" onClick={calcularMolaridade}>CALCULAR</button>{molResultado && (<div style={{marginTop: '20px', fontSize: '2rem', textAlign: 'center', color: 'var(--primary)'}}>{molResultado} M</div>)}</div>)}
         
-        {/* 0. TABELA PERIÓDICA (NOVA) */}
-        {activeTab === 'tabela' && (
-            <TabelaPeriodica apiUrl={API_URL} />
-        )}
+        {activeTab === 'diluicao' && (<div className="card" style={{maxWidth: '800px', margin: '0 auto'}}><h2>Diluição</h2><div style={{display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '10px'}}><div className="input-group-sidebar"><label>C1</label><input className="input-sidebar" type="number" value={dilC1} onChange={e => setDilC1(e.target.value)} /></div><div className="input-group-sidebar"><label>V1</label><input className="input-sidebar" type="number" value={dilV1} onChange={e => setDilV1(e.target.value)} /></div><div className="input-group-sidebar"><label>C2</label><input className="input-sidebar" type="number" value={dilC2} onChange={e => setDilC2(e.target.value)} /></div><div className="input-group-sidebar"><label>V2</label><input className="input-sidebar" type="number" value={dilV2} onChange={e => setDilV2(e.target.value)} /></div></div><button className="btn-sidebar" onClick={calcularDiluicao}>CALCULAR</button></div>)}
 
-        {/* 1. MASSA MOLAR */}
-        {activeTab === 'massa-molar' && (
-            <div className="card" style={{maxWidth: '600px', margin: '0 auto'}}>
-                <h2>Calculadora de Massa Molar</h2>
-                <p>Digite a fórmula química (Ex: H2SO4, NaCl)</p>
-                <div className="input-group-sidebar"><label>Fórmula</label><input className="input-sidebar" type="text" value={mmFormula} onChange={e => setMmFormula(e.target.value)} placeholder="Ex: H2O" /></div>
-                <button className="btn-sidebar" style={{background: 'var(--primary)', color: 'white', marginTop: '20px', justifyContent: 'center'}} onClick={calcMassaMolar}>CALCULAR</button>
-                
-                {mmResultado && mmResultado.massa_molar && (
-                    <div style={{marginTop: '30px', textAlign: 'center', padding: '20px', background: 'var(--bg-body)', borderRadius: '8px'}}>
-                        <h3 style={{margin:0, color: 'var(--text-muted)'}}>{mmResultado.formula}</h3>
-                        <div style={{fontSize: '3rem', fontWeight: 'bold', color: 'var(--primary)'}}>{mmResultado.massa_molar} <span style={{fontSize: '1.5rem'}}>g/mol</span></div>
-                        <div style={{textAlign:'left', marginTop:'15px', fontSize:'0.9rem', color:'var(--text-muted)'}}>
-                            {mmResultado.detalhes && mmResultado.detalhes.map((d, i) => <div key={i}>• {d}</div>)}
-                        </div>
-                    </div>
-                )}
-            </div>
-        )}
+        {activeTab === 'massa-molar' && (<div className="card" style={{maxWidth: '600px', margin: '0 auto'}}><h2>Massa Molar Automática</h2><p>Ex: H2SO4</p><div className="input-group-sidebar"><label>Fórmula</label><input className="input-sidebar" type="text" value={mmFormula} onChange={e => setMmFormula(e.target.value)} /></div><button className="btn-sidebar" onClick={calcMassaMolar}>CALCULAR</button>{mmResultado && (<div style={{marginTop:'20px', textAlign:'center'}}><h3>{mmResultado.formula}</h3><div style={{fontSize:'2.5rem', color:'var(--primary)'}}>{mmResultado.massa_molar} g/mol</div></div>)}</div>)}
 
-        {/* 2. PREPARO DE SOLUÇÕES */}
-        {activeTab === 'solucoes' && (
-            <div className="card" style={{maxWidth: '600px', margin: '0 auto'}}>
-                <h2>Preparo de Soluções (Sólido)</h2>
-                <p>Descubra quanto pesar para obter a solução desejada.</p>
-                <div className="input-group-sidebar"><label>Concentração Desejada (mol/L)</label><input className="input-sidebar" type="number" value={prepConc} onChange={e => setPrepConc(e.target.value)} /></div>
-                <div className="input-group-sidebar"><label>Volume Final (mL)</label><input className="input-sidebar" type="number" value={prepVol} onChange={e => setPrepVol(e.target.value)} /></div>
-                <div className="input-group-sidebar"><label>Massa Molar (g/mol)</label><input className="input-sidebar" type="number" value={prepMM} onChange={e => setPrepMM(e.target.value)} placeholder="Ex: 58.44 (NaCl)" /></div>
-                <button className="btn-sidebar" style={{background: 'var(--primary)', color: 'white', marginTop: '20px', justifyContent: 'center'}} onClick={calcPreparo}>CALCULAR MASSA</button>
-                
-                {prepMassa && (
-                    <div style={{marginTop: '30px', textAlign: 'center', padding: '20px', background: 'var(--bg-body)', borderRadius: '8px'}}>
-                        <h3 style={{margin:0, color: 'var(--text-muted)'}}>Massa a Pesar</h3>
-                        <div style={{fontSize: '3rem', fontWeight: 'bold', color: 'var(--primary)'}}>{prepMassa.massa_necessaria} <span style={{fontSize: '1.5rem'}}>g</span></div>
-                    </div>
-                )}
-            </div>
-        )}
+        {activeTab === 'solucoes' && (<div className="card" style={{maxWidth: '600px', margin: '0 auto'}}><h2>Preparo de Soluções</h2><div className="input-group-sidebar"><label>Conc. (mol/L)</label><input className="input-sidebar" type="number" value={prepConc} onChange={e => setPrepConc(e.target.value)} /></div><div className="input-group-sidebar"><label>Vol (mL)</label><input className="input-sidebar" type="number" value={prepVol} onChange={e => setPrepVol(e.target.value)} /></div><div className="input-group-sidebar"><label>MM (g/mol)</label><input className="input-sidebar" type="number" value={prepMM} onChange={e => setPrepMM(e.target.value)} /></div><button className="btn-sidebar" onClick={calcPreparo}>CALCULAR MASSA</button>{prepMassa && (<div style={{marginTop:'20px', textAlign:'center'}}><div style={{fontSize:'2.5rem', color:'var(--primary)'}}>{prepMassa.massa_necessaria} g</div></div>)}</div>)}
 
-        {/* 3. BEER-LAMBERT */}
-        {activeTab === 'espectro' && (
-            <div className="card" style={{maxWidth: '600px', margin: '0 auto'}}>
-                <h2>Lei de Beer-Lambert</h2>
-                <p>A = ε . l . c</p>
-                <div className="input-group-sidebar"><label>Absorbância (A)</label><input className="input-sidebar" type="number" value={beerAbs} onChange={e => setBeerAbs(e.target.value)} /></div>
-                <div className="input-group-sidebar"><label>Coeficiente (ε)</label><input className="input-sidebar" type="number" value={beerEpsilon} onChange={e => setBeerEpsilon(e.target.value)} /></div>
-                <div className="input-group-sidebar"><label>Caminho (cm)</label><input className="input-sidebar" type="number" value={beerCaminho} onChange={e => setBeerCaminho(e.target.value)} /></div>
-                <button className="btn-sidebar" style={{background: 'var(--primary)', color: 'white', marginTop: '20px', justifyContent: 'center'}} onClick={calcBeer}>CALCULAR CONCENTRAÇÃO</button>
-                
-                {beerConc && (
-                    <div style={{marginTop: '30px', textAlign: 'center', padding: '20px', background: 'var(--bg-body)', borderRadius: '8px'}}>
-                        <h3 style={{margin:0, color: 'var(--text-muted)'}}>Concentração Calculada</h3>
-                        <div style={{fontSize: '3rem', fontWeight: 'bold', color: 'var(--primary)'}}>{beerConc.concentracao} <span style={{fontSize: '1.5rem'}}>mol/L</span></div>
-                    </div>
-                )}
-            </div>
-        )}
-        
+        {activeTab === 'espectro' && (<div className="card" style={{maxWidth: '600px', margin: '0 auto'}}><h2>Lei de Beer-Lambert</h2><div className="input-group-sidebar"><label>Abs (A)</label><input className="input-sidebar" type="number" value={beerAbs} onChange={e => setBeerAbs(e.target.value)} /></div><div className="input-group-sidebar"><label>Epsilon (ε)</label><input className="input-sidebar" type="number" value={beerEpsilon} onChange={e => setBeerEpsilon(e.target.value)} /></div><div className="input-group-sidebar"><label>Caminho (cm)</label><input className="input-sidebar" type="number" value={beerCaminho} onChange={e => setBeerCaminho(e.target.value)} /></div><button className="btn-sidebar" onClick={calcBeer}>CALCULAR</button>{beerConc && (<div style={{marginTop:'20px', textAlign:'center'}}><div style={{fontSize:'2.5rem', color:'var(--primary)'}}>{beerConc.concentracao} M</div></div>)}</div>)}
+
       </main>
       {showModal && (<div className="modal-overlay"><div className="modal"><h2>Confirmar</h2><div className="modal-actions"><button className="btn-cancel" onClick={() => setShowModal(false)}>Cancelar</button><button className="btn-confirm" onClick={executeDelete}>Excluir</button></div></div></div>)}
     </div>
