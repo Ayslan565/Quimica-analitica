@@ -3,7 +3,7 @@ import axios from 'axios'
 import './App.css'
 
 // --- IMPORTAÇÃO DOS ANÚNCIOS ---
-// Certifique-se de que o arquivo AdBanner.jsx existe na pasta src
+// Certifique-se de que o ficheiro AdBanner.jsx existe na pasta src
 import AdBanner from './AdBanner'
 
 // --- IMPORTAÇÃO SEGURA DO PLOTLY ---
@@ -15,7 +15,7 @@ const Plot = createPlotlyComponent.default
 
 // --- CONFIGURAÇÃO DA API (ATUALIZADA) ---
 // Se estiver em produção (Render), usa o link do seu backend.
-// Se estiver local, o Vite gerencia o proxy (vazio).
+// Se estiver local, o Vite gere o proxy (vazio).
 const API_URL = import.meta.env.PROD 
   ? 'https://quimica-analitica.onrender.com' 
   : ''; 
@@ -221,12 +221,12 @@ function App() {
             </button>
           </div>
 
-          {/* --- ANÚNCIO SIDEBAR --- */}
-          {/* Coloque seu ID do AdSense no lugar de 'SEU_ID...' se ja tiver */}
+          {/* --- ANÚNCIO SIDEBAR (CORRIGIDO) --- */}
+          {/* Substitua "INSIRA_SEU_ID_VERTICAL_AQUI" pelo número do seu bloco vertical */}
           <div className="menu-group">
              <AdBanner 
-                slotId="SEU_ID_BLOCO_VERTICAL" 
-                style={{minHeight: '250px'}} 
+                slotId="INSIRA_SEU_ID_VERTICAL_AQUI" 
+                style={{minHeight: '250px', width: '100%', display: 'block'}} 
              /> 
           </div>
 
@@ -267,11 +267,12 @@ function App() {
 
       <main className="main-content">
         
-        {/* --- ANÚNCIO TOPO (Banner Horizontal) --- */}
+        {/* --- ANÚNCIO TOPO (Banner Horizontal CORRIGIDO) --- */}
+        {/* Substitua "INSIRA_SEU_ID_HORIZONTAL_AQUI" pelo número do seu bloco horizontal */}
         <AdBanner 
-            slotId="SEU_ID_BLOCO_HORIZONTAL" 
+            slotId="INSIRA_SEU_ID_HORIZONTAL_AQUI" 
             format="horizontal" 
-            style={{marginBottom: '20px', minHeight: '90px'}} 
+            style={{marginBottom: '20px', minHeight: '90px', width: '100%', display: 'block'}} 
         />
 
         {/* --- ABA 1: TRATAMENTO DE DADOS --- */}
