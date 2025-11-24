@@ -17,7 +17,7 @@ const Plot = createPlotlyComponent.default
 // Se estiver em produção (Render), usa o link do seu backend.
 // Se estiver local, o Vite gerencia o proxy (vazio).
 const API_URL = import.meta.env.PROD 
-  ? 'https://quimica-analitica.onrender.com' 
+  ? 'https://quimica-analitica.onrender.com'
   : ''; 
 
 function App() {
