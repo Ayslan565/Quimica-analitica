@@ -3,7 +3,6 @@ import axios from 'axios'
 import './App.css'
 
 // --- IMPORTAÇÃO DOS ANÚNCIOS ---
-// Certifique-se de que o ficheiro AdBanner.jsx existe na pasta src
 import AdBanner from './AdBanner'
 
 // --- IMPORTAÇÃO SEGURA DO PLOTLY ---
@@ -13,16 +12,14 @@ const Plot = createPlotlyComponent.default
   ? createPlotlyComponent.default(Plotly) 
   : createPlotlyComponent(Plotly)
 
-// --- CONFIGURAÇÃO DA API (ATUALIZADA) ---
-// Se estiver em produção (Render), usa o link do seu backend.
-// Se estiver local, o Vite gere o proxy (vazio).
+// --- CONFIGURAÇÃO DA API ---
 const API_URL = import.meta.env.PROD 
   ? 'https://quimica-analitica.onrender.com' 
   : ''; 
 
 function App() {
   // --- NAVEGAÇÃO ---
-  const [activeTab, setActiveTab] = useState('dados') // 'dados', 'molaridade', 'diluicao'
+  const [activeTab, setActiveTab] = useState('dados')
 
   // --- ESTADOS: TRATAMENTO DE DADOS ---
   const [qtdColunas, setQtdColunas] = useState(3)
@@ -42,7 +39,7 @@ function App() {
   const [dilC2, setDilC2] = useState('')
   const [dilV2, setDilV2] = useState('') 
 
-  // --- PERSONALIZAÇÃO GERAL ---
+  // --- PERSONALIZAÇÃO ---
   const [isDarkMode, setIsDarkMode] = useState(true)
   const [accentColor, setAccentColor] = useState('#6366f1') 
   const [mostrarSeries, setMostrarSeries] = useState(true)
@@ -75,7 +72,7 @@ function App() {
     const mm = parseFloat(molMM)
     const v = parseFloat(molVol)
     if (m && mm && v) {
-      const mol = m / (mm * (v / 1000)) // V em mL para L
+      const mol = m / (mm * (v / 1000))
       setMolResultado(mol.toFixed(4))
     }
   }
@@ -134,9 +131,6 @@ function App() {
   const handleChange = (index, chave, valor) => {
     const novas = [...linhas]; if (!novas[index]) novas[index] = {}; novas[index][chave] = valor; setLinhas(novas);
   }
-  const updateCustomStyle = (idx, field, value) => {
-    setCustomStyles(prev => ({ ...prev, [idx]: { ...prev[idx], [field]: value } }))
-  }
 
   const calcular = useCallback(async () => {
     setStatus("Calculando...")
@@ -147,9 +141,7 @@ function App() {
         return obj
       })
       
-      // --- CHAMADA COM O LINK DO RENDER ---
       const res = await axios.post(`${API_URL}/experimental/calcular`, dadosLimpos) 
-      
       setResultado(res.data)
       setStatus("Atualizado")
     } catch (error) { 
@@ -207,7 +199,6 @@ function App() {
         <div className="brand">🧪 LabData Pro</div>
         <div className="sidebar-content">
           
-          {/* --- MENU DE NAVEGAÇÃO --- */}
           <div className="menu-group">
             <div className="menu-label">Ferramentas</div>
             <button className={`btn-sidebar ${activeTab === 'dados' ? 'active' : ''}`} onClick={() => setActiveTab('dados')}>
@@ -221,9 +212,11 @@ function App() {
             </button>
           </div>
 
+          {/* --- ANÚNCIO SIDEBAR (VERTICAL) --- */}
           <div className="menu-group">
+             {/* ⚠️ SUBSTITUA 'COLE_O_NUMERO_AQUI' PELO ID DO BLOCO VERTICAL DO ADSENSE */}
              <AdBanner 
-                slotId="1234567890" 
+                slotId="COLE_O_NUMERO_AQUI" 
                 style={{minHeight: '250px', width: '100%', display: 'block'}} 
              /> 
           </div>
@@ -263,9 +256,10 @@ function App() {
 
       <main className="main-content">
         
-
+        {/* --- ANÚNCIO TOPO (HORIZONTAL) --- */}
+        {/* ⚠️ SUBSTITUA 'COLE_O_NUMERO_AQUI' PELO ID DO BLOCO HORIZONTAL DO ADSENSE */}
         <AdBanner 
-            slotId="INSIRA_SEU_ID_HORIZONTAL_AQUI" 
+            slotId="COLE_O_NUMERO_AQUI" 
             format="horizontal" 
             style={{marginBottom: '20px', minHeight: '90px', width: '100%', display: 'block'}} 
         />
@@ -329,7 +323,6 @@ function App() {
             </>
         )}
 
-
         {activeTab === 'molaridade' && (
             <>
                 <header className="header-info">
@@ -359,7 +352,6 @@ function App() {
                 </div>
             </>
         )}
-
 
         {activeTab === 'diluicao' && (
             <>
