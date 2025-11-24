@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback } from 'react'
+import { useState, useEffect, useRef } from 'react'
 import axios from 'axios'
 import './App.css'
 
@@ -66,31 +66,24 @@ function App() {
     else document.body.classList.add('light-mode');
   }, [isDarkMode, accentColor]);
 
-  // --- FUNÇÕES: MOLARIDADE ---
+  // --- FUNÇÕES DE CÁLCULO ---
   const calcularMolaridade = () => {
-    const m = parseFloat(molMassa)
-    const mm = parseFloat(molMM)
-    const v = parseFloat(molVol)
-    if (m && mm && v) {
-      const mol = m / (mm * (v / 1000))
-      setMolResultado(mol.toFixed(4))
-    }
+    const m = parseFloat(molMassa); const mm = parseFloat(molMM); const v = parseFloat(molVol);
+    if (m && mm && v) setMolResultado((m / (mm * (v / 1000))).toFixed(4));
   }
 
-  // --- FUNÇÕES: DILUIÇÃO ---
   const calcularDiluicao = () => {
     const c1 = parseFloat(dilC1); const v1 = parseFloat(dilV1);
     const c2 = parseFloat(dilC2); const v2 = parseFloat(dilV2);
-    
     let res = 0;
-    if (c1 && v1 && c2 && !v2) { res = (c1 * v1) / c2; alert(`V2 Calculado: ${res.toFixed(2)} mL`); }
-    else if (c1 && v1 && !c2 && v2) { res = (c1 * v1) / v2; alert(`C2 Calculado: ${res.toFixed(4)} M`); }
-    else if (!c1 && v1 && c2 && v2) { res = (c2 * v2) / v1; alert(`C1 Calculado: ${res.toFixed(4)} M`); }
-    else if (c1 && !v1 && c2 && v2) { res = (c2 * v2) / c1; alert(`V1 Calculado: ${res.toFixed(2)} mL`); }
-    else { alert("Preencha 3 campos para calcular o 4º!"); }
+    if (c1 && v1 && c2 && !v2) { res = (c1 * v1) / c2; alert(`V2: ${res.toFixed(2)} mL`); }
+    else if (c1 && v1 && !c2 && v2) { res = (c1 * v1) / v2; alert(`C2: ${res.toFixed(4)} M`); }
+    else if (!c1 && v1 && c2 && v2) { res = (c2 * v2) / v1; alert(`C1: ${res.toFixed(4)} M`); }
+    else if (c1 && !v1 && c2 && v2) { res = (c2 * v2) / c1; alert(`V1: ${res.toFixed(2)} mL`); }
+    else { alert("Preencha 3 campos!"); }
   }
 
-  // --- FUNÇÕES: TRATAMENTO DE DADOS ---
+  // --- FUNÇÕES DE TABELA ---
   const handlePaste = (e, rowIndexStart, colIndexStart, type) => {
     e.preventDefault();
     const pasteData = e.clipboardData.getData('text');
@@ -113,26 +106,22 @@ function App() {
     });
     setLinhas(novasLinhas);
   };
-
-  const addLinha = () => {
-    const ultVol = linhas.length > 0 ? parseFloat(linhas[linhas.length-1].volume || 0) : 0
-    setLinhas([...linhas, { volume: ultVol + 1 }])
-  }
+  const addLinha = () => { setLinhas([...linhas, { volume: (parseFloat(linhas[linhas.length-1]?.volume)||0) + 1 }]) }
   const addColuna = () => setQtdColunas(qtdColunas + 1)
   const confirmDelete = (tipo) => { setActionToDelete(tipo); setShowModal(true); }
   const executeDelete = () => {
-    if (actionToDelete === 'row' && linhas.length > 1) {
-        const novas = [...linhas]; novas.pop(); setLinhas(novas);
-    } else if (actionToDelete === 'col' && qtdColunas > 1) {
-        setQtdColunas(qtdColunas - 1);
-    }
+    if (actionToDelete === 'row' && linhas.length > 1) { const novas = [...linhas]; novas.pop(); setLinhas(novas); }
+    else if (actionToDelete === 'col' && qtdColunas > 1) { setQtdColunas(qtdColunas - 1); }
     setShowModal(false)
   }
   const handleChange = (index, chave, valor) => {
     const novas = [...linhas]; if (!novas[index]) novas[index] = {}; novas[index][chave] = valor; setLinhas(novas);
   }
 
-  const calcular = useCallback(async () => {
+  // --- CÁLCULO AUTOMÁTICO BLINDADO (USANDO REF) ---
+  const timeoutRef = useRef(null)
+
+  const executarCalculoAPI = async () => {
     setStatus("Calculando...")
     try {
       const dadosLimpos = linhas.map(row => {
@@ -140,7 +129,6 @@ function App() {
         for(let i=0; i < qtdColunas; i++){ if(row[`ph${i}`]) obj[`ph${i}`] = row[`ph${i}`] }
         return obj
       })
-      
       const res = await axios.post(`${API_URL}/experimental/calcular`, dadosLimpos) 
       setResultado(res.data)
       setStatus("Atualizado")
@@ -148,20 +136,23 @@ function App() {
         console.error(error)
         setStatus("Erro na API") 
     }
-  }, [linhas, qtdColunas])
+  }
 
   useEffect(() => {
     if(activeTab === 'dados') { 
-        const timer = setTimeout(() => calcular(), 800)
-        return () => clearTimeout(timer)
+        if (timeoutRef.current) clearTimeout(timeoutRef.current)
+        timeoutRef.current = setTimeout(() => {
+            executarCalculoAPI()
+        }, 1000)
+        return () => clearTimeout(timeoutRef.current)
     }
-  }, [calcular, activeTab])
+  }, [linhas, qtdColunas, activeTab]) 
 
+  // --- DADOS GRÁFICO ---
   const gerarDadosGrafico = () => {
     if (!resultado) return []
     let traces = []
     const defaultColors = ['#4472C4', '#ED7D31', '#A5A5A5', '#FFC000', '#5B9BD5'];
-
     if (mostrarSeries) {
       for (let i = 0; i < qtdColunas; i++) {
         const xData = []; const yData = []
@@ -173,18 +164,15 @@ function App() {
         if (xData.length > 0) {
           const style = customStyles[i] || {}
           traces.push({
-            x: xData, y: yData, type: 'scatter', mode: 'lines+markers',
-            name: `Série ${i + 1}`,
+            x: xData, y: yData, type: 'scatter', mode: 'lines+markers', name: `Série ${i + 1}`,
             line: { color: style.color || defaultColors[i % defaultColors.length], width: style.width || grossuraGeralSeries, shape: 'spline' },
-            marker: { size: (style.width || grossuraGeralSeries) + 4 }, 
-            showlegend: true, opacity: 0.9, connectgaps: true
+            marker: { size: (style.width || grossuraGeralSeries) + 4 }, showlegend: true, opacity: 0.9, connectgaps: true
           })
         }
       }
     }
     traces.push({
-      x: resultado.grafico.x, y: resultado.grafico.y, type: 'scatter', mode: 'lines+markers',
-      name: nomeLegenda, 
+      x: resultado.grafico.x, y: resultado.grafico.y, type: 'scatter', mode: 'lines+markers', name: nomeLegenda, 
       line: {color: accentColor, width: grossuraMedia, shape: 'spline'},
       marker: {color: isDarkMode ? '#fff' : '#000', size: grossuraMedia + 4, line: {color: accentColor, width: 2}},
       error_y: { type: 'data', array: resultado.grafico.erro, visible: true, color: isDarkMode ? 'rgba(255,255,255,0.5)' : 'rgba(0,0,0,0.5)' },
@@ -198,25 +186,18 @@ function App() {
       <aside className="sidebar">
         <div className="brand">🧪 LabData Pro</div>
         <div className="sidebar-content">
-          
           <div className="menu-group">
             <div className="menu-label">Ferramentas</div>
-            <button className={`btn-sidebar ${activeTab === 'dados' ? 'active' : ''}`} onClick={() => setActiveTab('dados')}>
-                📉 Tratamento de Dados
-            </button>
-            <button className={`btn-sidebar ${activeTab === 'molaridade' ? 'active' : ''}`} onClick={() => setActiveTab('molaridade')}>
-                🧪 Molaridade
-            </button>
-            <button className={`btn-sidebar ${activeTab === 'diluicao' ? 'active' : ''}`} onClick={() => setActiveTab('diluicao')}>
-                💧 Diluição
-            </button>
+            <button className={`btn-sidebar ${activeTab === 'dados' ? 'active' : ''}`} onClick={() => setActiveTab('dados')}>📉 Tratamento</button>
+            <button className={`btn-sidebar ${activeTab === 'molaridade' ? 'active' : ''}`} onClick={() => setActiveTab('molaridade')}>🧪 Molaridade</button>
+            <button className={`btn-sidebar ${activeTab === 'diluicao' ? 'active' : ''}`} onClick={() => setActiveTab('diluicao')}>💧 Diluição</button>
           </div>
 
-          {/* --- ANÚNCIO SIDEBAR (VERTICAL) --- */}
+          {/* --- ANÚNCIO SIDEBAR (QUADRO) --- */}
           <div className="menu-group">
-             {/* ⚠️ SUBSTITUA 'COLE_O_NUMERO_AQUI' PELO ID DO BLOCO VERTICAL DO ADSENSE */}
+             {/* ID DO SEU BLOCO LATERAL */}
              <AdBanner 
-                slotId="COLE_O_NUMERO_AQUI" 
+                slotId="8301937517" 
                 style={{minHeight: '250px', width: '100%', display: 'block'}} 
              /> 
           </div>
@@ -232,7 +213,6 @@ function App() {
                         <button className="btn-sidebar danger small" onClick={() => confirmDelete('col')}>- Coluna</button>
                     </div>
                 </div>
-
                 <div className="menu-group settings-group">
                     <div className="menu-label">Gráfico</div>
                     <div className="setting-item"><span>Mostrar Séries</span><button className="theme-toggle" onClick={() => setMostrarSeries(!mostrarSeries)}>{mostrarSeries ? '👁️ ON' : '🚫 OFF'}</button></div>
@@ -247,7 +227,6 @@ function App() {
                 </div>
             </>
           )}
-
           <div className="menu-group" style={{marginTop: 'auto'}}>
              <div className="setting-item"><span>Tema</span><button className="theme-toggle" onClick={() => setIsDarkMode(!isDarkMode)}>{isDarkMode ? '🌙' : '☀️'}</button></div>
           </div>
@@ -257,40 +236,34 @@ function App() {
       <main className="main-content">
         
         {/* --- ANÚNCIO TOPO (HORIZONTAL) --- */}
-        {/* ⚠️ SUBSTITUA 'COLE_O_NUMERO_AQUI' PELO ID DO BLOCO HORIZONTAL DO ADSENSE */}
+        {/* JÁ INSERI O ID '2103376582' AQUI PARA NÃO DAR ERRO */}
         <AdBanner 
-            slotId="COLE_O_NUMERO_AQUI" 
+            slotId="2103376582" 
             format="horizontal" 
             style={{marginBottom: '20px', minHeight: '90px', width: '100%', display: 'block'}} 
         />
-
+        
         {activeTab === 'dados' && (
             <>
                 <header className="header-info">
                 <div><h2 style={{margin:0}}>Tratamento de Dados</h2><small style={{color:'var(--text-muted)'}}>Dashboard Experimental</small></div>
                 <span className={`status-badge ${status === 'Calculando...' ? 'loading' : 'live'}`}>{status === 'Atualizado' ? '● Tempo Real' : status}</span>
                 </header>
-
                 <div className="table-container">
                 <table>
                     <thead><tr><th className="sticky-col">{eixoX}</th>{[...Array(qtdColunas)].map((_, i) => <th key={i}>pH {i + 1}</th>)}</tr></thead>
                     <tbody>
                     {linhas.map((linha, i) => (
                         <tr key={i}>
-                        <td className="sticky-col">
-                            <input type="number" value={linha.volume} onChange={e => handleChange(i, 'volume', e.target.value)} onPaste={(e) => handlePaste(e, i, 0, 'vol')}/>
-                        </td>
+                        <td className="sticky-col"><input type="number" value={linha.volume} onChange={e => handleChange(i, 'volume', e.target.value)} onPaste={(e) => handlePaste(e, i, 0, 'vol')}/></td>
                         {[...Array(qtdColunas)].map((_, j) => (
-                            <td key={j}>
-                            <input type="number" step="0.01" placeholder="-" value={linha[`ph${j}`] || ''} onChange={e => handleChange(i, `ph${j}`, e.target.value)} onPaste={(e) => handlePaste(e, i, j, 'ph')}/>
-                            </td>
+                            <td key={j}><input type="number" step="0.01" placeholder="-" value={linha[`ph${j}`] || ''} onChange={e => handleChange(i, `ph${j}`, e.target.value)} onPaste={(e) => handlePaste(e, i, j, 'ph')}/></td>
                         ))}
                         </tr>
                     ))}
                     </tbody>
                 </table>
                 </div>
-
                 {resultado && (
                 <div className="results-grid">
                     <div className="card">
@@ -322,57 +295,30 @@ function App() {
                 )}
             </>
         )}
-
+        
         {activeTab === 'molaridade' && (
-            <>
-                <header className="header-info">
-                    <div><h2 style={{margin:0}}>Calculadora de Molaridade</h2></div>
-                </header>
-                <div className="card" style={{maxWidth: '600px', margin: '0 auto'}}>
-                    <div className="input-group-sidebar">
-                        <label>Massa do Soluto (g)</label>
-                        <input className="input-sidebar" type="number" value={molMassa} onChange={e => setMolMassa(e.target.value)} placeholder="Ex: 50" />
-                    </div>
-                    <div className="input-group-sidebar">
-                        <label>Massa Molar (g/mol)</label>
-                        <input className="input-sidebar" type="number" value={molMM} onChange={e => setMolMM(e.target.value)} placeholder="Ex: 58.44 (NaCl)" />
-                    </div>
-                    <div className="input-group-sidebar">
-                        <label>Volume da Solução (mL)</label>
-                        <input className="input-sidebar" type="number" value={molVol} onChange={e => setMolVol(e.target.value)} placeholder="Ex: 500" />
-                    </div>
+             <div className="card" style={{maxWidth: '600px', margin: '0 auto'}}>
+                    <div className="input-group-sidebar"><label>Massa do Soluto (g)</label><input className="input-sidebar" type="number" value={molMassa} onChange={e => setMolMassa(e.target.value)} /></div>
+                    <div className="input-group-sidebar"><label>Massa Molar (g/mol)</label><input className="input-sidebar" type="number" value={molMM} onChange={e => setMolMM(e.target.value)} /></div>
+                    <div className="input-group-sidebar"><label>Volume da Solução (mL)</label><input className="input-sidebar" type="number" value={molVol} onChange={e => setMolVol(e.target.value)} /></div>
                     <button className="btn-sidebar" style={{background: 'var(--primary)', color: 'white', marginTop: '20px', justifyContent: 'center'}} onClick={calcularMolaridade}>CALCULAR</button>
-                    
-                    {molResultado && (
-                        <div style={{marginTop: '30px', textAlign: 'center', padding: '20px', background: 'var(--bg-body)', borderRadius: '8px'}}>
-                            <h3 style={{margin:0, color: 'var(--text-muted)'}}>Concentração Molar</h3>
-                            <div style={{fontSize: '3rem', fontWeight: 'bold', color: 'var(--primary)'}}>{molResultado} <span style={{fontSize: '1.5rem'}}>mol/L</span></div>
-                        </div>
-                    )}
-                </div>
-            </>
+                    {molResultado && (<div style={{marginTop: '30px', textAlign: 'center', padding: '20px', background: 'var(--bg-body)', borderRadius: '8px'}}><h3 style={{margin:0, color: 'var(--text-muted)'}}>Concentração Molar</h3><div style={{fontSize: '3rem', fontWeight: 'bold', color: 'var(--primary)'}}>{molResultado} <span style={{fontSize: '1.5rem'}}>mol/L</span></div></div>)}
+            </div>
         )}
-
-        {activeTab === 'diluicao' && (
-            <>
-                <header className="header-info">
-                    <div><h2 style={{margin:0}}>Calculadora de Diluição</h2><small>C1 . V1 = C2 . V2</small></div>
-                </header>
-                <div className="card" style={{maxWidth: '800px', margin: '0 auto'}}>
+         {activeTab === 'diluicao' && (
+             <div className="card" style={{maxWidth: '800px', margin: '0 auto'}}>
                     <p style={{color: 'var(--text-muted)', marginBottom: '20px'}}>Preencha 3 campos e deixe vazio o que você quer descobrir.</p>
                     <div style={{display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '20px'}}>
-                        <div className="input-group-sidebar"><label>Concentração Inicial (C1)</label><input className="input-sidebar" type="number" value={dilC1} onChange={e => setDilC1(e.target.value)} /></div>
-                        <div className="input-group-sidebar"><label>Volume Inicial (V1)</label><input className="input-sidebar" type="number" value={dilV1} onChange={e => setDilV1(e.target.value)} /></div>
-                        <div className="input-group-sidebar"><label>Concentração Final (C2)</label><input className="input-sidebar" type="number" value={dilC2} onChange={e => setDilC2(e.target.value)} /></div>
-                        <div className="input-group-sidebar"><label>Volume Final (V2)</label><input className="input-sidebar" type="number" value={dilV2} onChange={e => setDilV2(e.target.value)} /></div>
+                        <div className="input-group-sidebar"><label>C1</label><input className="input-sidebar" type="number" value={dilC1} onChange={e => setDilC1(e.target.value)} /></div>
+                        <div className="input-group-sidebar"><label>V1</label><input className="input-sidebar" type="number" value={dilV1} onChange={e => setDilV1(e.target.value)} /></div>
+                        <div className="input-group-sidebar"><label>C2</label><input className="input-sidebar" type="number" value={dilC2} onChange={e => setDilC2(e.target.value)} /></div>
+                        <div className="input-group-sidebar"><label>V2</label><input className="input-sidebar" type="number" value={dilV2} onChange={e => setDilV2(e.target.value)} /></div>
                     </div>
                     <button className="btn-sidebar" style={{background: 'var(--primary)', color: 'white', marginTop: '20px', justifyContent: 'center'}} onClick={calcularDiluicao}>CALCULAR</button>
-                </div>
-            </>
+             </div>
         )}
-
+        
       </main>
-      
       {showModal && (<div className="modal-overlay"><div className="modal"><h2>Confirmar</h2><p>Deseja excluir?</p><div className="modal-actions"><button className="btn-cancel" onClick={() => setShowModal(false)}>Cancelar</button><button className="btn-confirm" onClick={executeDelete}>Excluir</button></div></div></div>)}
     </div>
   )
