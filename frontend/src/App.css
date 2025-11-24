@@ -135,4 +135,101 @@ body:not(.light-mode) { --bg-body: #0f172a; --bg-sidebar: #1e293b; --bg-card: #1
   .mobile-pull-handle, .mobile-overlay {
     display: none;
   }
+}@media (max-width: 768px) {
+  .dashboard-layout {
+    flex-direction: column;
+  }
+
+  .sidebar {
+    position: fixed;
+    bottom: 0;
+    left: 0;
+    width: 100%;
+    min-width: 100%;
+    height: auto;
+    max-height: 85vh;
+    border-right: none;
+    border-top: 1px solid var(--border); /* Borda sutil */
+    border-radius: 20px 20px 0 0;
+    padding-top: 0;
+    z-index: 1000;
+    
+    /* Começa fechado (só a pontinha de fora) */
+    transform: translateY(calc(100% - 45px)); 
+    transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    box-shadow: 0 -5px 25px rgba(0,0,0,0.3);
+  }
+
+  .sidebar.mobile-open {
+    transform: translateY(0);
+  }
+
+  .sidebar .brand {
+    display: none; /* Esconde logo no menu mobile para ganhar espaço */
+  }
+
+  /* PUXADOR (Handle) */
+  .mobile-pull-handle {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    height: 45px;
+    
+    /* AQUI ESTÁ A CORREÇÃO DA COR */
+    background-color: transparent; /* Fica transparente para pegar a cor da sidebar */
+    
+    border-radius: 20px 20px 0 0;
+    cursor: pointer;
+    width: 100%;
+  }
+
+  .handle-bar {
+    width: 40px;
+    height: 5px;
+    background-color: var(--text-muted); /* Cor do tracinho */
+    border-radius: 10px;
+    margin-bottom: 4px;
+    opacity: 0.6;
+  }
+
+  .mobile-pull-handle span {
+    font-size: 0.7rem;
+    color: var(--text-muted);
+    text-transform: uppercase;
+    letter-spacing: 1px;
+    font-weight: bold;
+  }
+
+  .main-content {
+    margin-bottom: 60px;
+    height: auto;
+    overflow-y: visible;
+  }
+
+  .results-grid {
+    grid-template-columns: 1fr;
+  }
+  
+  .mobile-overlay {
+    position: fixed;
+    top: 0; left: 0; right: 0; bottom: 0;
+    background: rgba(0,0,0,0.6);
+    z-index: 999;
+    backdrop-filter: blur(3px);
+  }
+}
+
+/* --- CORREÇÃO PARA DESKTOP (PC) --- */
+/* Isso garante que a barra branca SUMA no computador */
+@media (min-width: 769px) {
+  .mobile-pull-handle {
+    display: none !important; /* Força o desaparecimento */
+  }
+  .mobile-overlay {
+    display: none !important;
+  }
+  .sidebar {
+    transform: none !important; /* Garante que a sidebar fique no lugar certo */
+  }
 }
