@@ -15,7 +15,7 @@ const AdBanner = ({ slotId, format = 'auto', style = {} }) => {
         <small style={{display:'block', color:'#ccc', fontSize:'10px'}}>Publicidade</small>
         <ins className="adsbygoogle"
             style={{ display: 'block' }}
-            data-ad-client="ca-pub-SEU_ID_DO_ADSENSE_AQUI" /* COLOCAR SEU ID AQUI TAMBÉM */
+            data-ad-client="ca-pub-6572314594059473" /* COLOCAR SEU ID AQUI TAMBÉM */
             data-ad-slot={slotId}
             data-ad-format={format}
             data-full-width-responsive="true">

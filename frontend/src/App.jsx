@@ -221,16 +221,13 @@ function App() {
             </button>
           </div>
 
-          {/* --- ANÚNCIO SIDEBAR (CORRIGIDO) --- */}
-          {/* Substitua "INSIRA_SEU_ID_VERTICAL_AQUI" pelo número do seu bloco vertical */}
           <div className="menu-group">
              <AdBanner 
-                slotId="INSIRA_SEU_ID_VERTICAL_AQUI" 
+                slotId="1234567890" 
                 style={{minHeight: '250px', width: '100%', display: 'block'}} 
              /> 
           </div>
 
-          {/* --- CONTROLES (Só aparecem na aba DADOS) --- */}
           {activeTab === 'dados' && (
             <>
                 <div className="menu-group" style={{borderTop: '1px solid var(--border)', paddingTop: '15px'}}>
@@ -258,7 +255,6 @@ function App() {
             </>
           )}
 
-          {/* CONFIGURAÇÃO GLOBAL */}
           <div className="menu-group" style={{marginTop: 'auto'}}>
              <div className="setting-item"><span>Tema</span><button className="theme-toggle" onClick={() => setIsDarkMode(!isDarkMode)}>{isDarkMode ? '🌙' : '☀️'}</button></div>
           </div>
@@ -267,15 +263,13 @@ function App() {
 
       <main className="main-content">
         
-        {/* --- ANÚNCIO TOPO (Banner Horizontal CORRIGIDO) --- */}
-        {/* Substitua "INSIRA_SEU_ID_HORIZONTAL_AQUI" pelo número do seu bloco horizontal */}
+
         <AdBanner 
             slotId="INSIRA_SEU_ID_HORIZONTAL_AQUI" 
             format="horizontal" 
             style={{marginBottom: '20px', minHeight: '90px', width: '100%', display: 'block'}} 
         />
 
-        {/* --- ABA 1: TRATAMENTO DE DADOS --- */}
         {activeTab === 'dados' && (
             <>
                 <header className="header-info">
@@ -335,7 +329,7 @@ function App() {
             </>
         )}
 
-        {/* --- ABA 2: MOLARIDADE --- */}
+
         {activeTab === 'molaridade' && (
             <>
                 <header className="header-info">
@@ -366,7 +360,7 @@ function App() {
             </>
         )}
 
-        {/* --- ABA 3: DILUIÇÃO --- */}
+
         {activeTab === 'diluicao' && (
             <>
                 <header className="header-info">
