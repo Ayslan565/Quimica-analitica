@@ -157,9 +157,7 @@ function App() {
                 } 
             }); 
             if (xData.length > 0) { 
-                // Usa a cor definida no estado ou uma cor padrão do fallback
                 const corSerie = seriesColors[i] || defaultColors[i % defaultColors.length];
-                
                 traces.push({ 
                     x: xData, y: yData, 
                     type: 'scatter', mode: 'lines+markers', 
@@ -234,6 +232,25 @@ function App() {
 
           {activeTab === 'dados' && (
             <div className="menu-group settings-group">
+                {/* --- BOTÕES DE EDITAR TABELA (ATUALIZADO) --- */}
+                <div className="menu-label">Tabela</div>
+                
+                {/* Contêiner Flex para alinhar os botões em duas colunas */}
+                <div style={{display: 'flex', gap: '10px', width: '100%', marginBottom: '15px'}}>
+                    
+                    {/* Coluna Esquerda: Adicionar - Borda com a cor do tema */}
+                    <div style={{flex: 1, display: 'flex', flexDirection: 'column', gap: '5px'}}>
+                        <button className="btn-sidebar" style={{border: '1px solid var(--primary)'}} onClick={addLinha}><span>➕</span> Linha</button>
+                        <button className="btn-sidebar" style={{border: '1px solid var(--primary)'}} onClick={addColuna}><span>➕</span> Coluna</button>
+                    </div>
+
+                    {/* Coluna Direita: Remover (Vermelho) - Borda vermelha e ícone de menos */}
+                    <div style={{flex: 1, display: 'flex', flexDirection: 'column', gap: '5px'}}>
+                        <button className="btn-sidebar danger" style={{border: '1px solid #ef4444'}} onClick={() => confirmDelete('row')}><span>➖</span> Linha</button>
+                        <button className="btn-sidebar danger" style={{border: '1px solid #ef4444'}} onClick={() => confirmDelete('col')}><span>➖</span> Coluna</button>
+                    </div>
+                </div>
+
                 <div className="menu-label">Gráfico</div>
                 <div className="setting-item"><span>Mostrar Séries</span><button className="theme-toggle" onClick={() => setMostrarSeries(!mostrarSeries)}>{mostrarSeries ? '👁️ ON' : '🚫 OFF'}</button></div>
                 
@@ -241,18 +258,16 @@ function App() {
                 <div className="setting-item"><span>Cor Média</span><input type="color" value={mediaColor} onChange={(e) => setMediaColor(e.target.value)} className="color-picker"/></div>
                 
                 {/* LISTA DINÂMICA DE CORES DAS SÉRIES */}
-                {/* Cria um input color para cada coluna existente */}
                 <div className="menu-label" style={{marginTop:'10px'}}>Cores das Séries</div>
                 {[...Array(qtdColunas)].map((_, i) => (
                     <div key={i} className="setting-item" style={{fontSize:'0.8rem'}}>
                         <span>Série {i + 1}</span>
                         <input 
                             type="color" 
-                            // Se já existir cor salva, usa ela. Senão, usa padrão.
                             value={seriesColors[i] || ['#4472C4', '#ED7D31', '#A5A5A5', '#FFC000', '#5B9BD5'][i % 5]} 
                             onChange={(e) => updateSeriesColor(i, e.target.value)} 
                             className="color-picker"
-                            style={{width:'30px', height:'30px'}} // Um pouco menor para caber
+                            style={{width:'30px', height:'30px'}} 
                         />
                     </div>
                 ))}
