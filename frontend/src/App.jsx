@@ -2,7 +2,7 @@ import { useState, useEffect, useRef } from 'react'
 import axios from 'axios'
 import './App.css'
 
-// --- IMPORTAÇÃO DOS ANÚNCIOS ---
+// --- IMPORTAÇÃO DOS ANÚNCIOS (Não mexer) ---
 import AdBanner from './AdBanner'
 
 // --- IMPORTAÇÃO SEGURA DO PLOTLY ---
@@ -23,9 +23,6 @@ const API_URL = import.meta.env.PROD
 function App() {
   // --- NAVEGAÇÃO ---
   const [activeTab, setActiveTab] = useState('dados')
-  
-  // --- ESTADO MENU MOBILE ---
-  const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false)
 
   // --- ESTADOS: TRATAMENTO DE DADOS ---
   const [qtdColunas, setQtdColunas] = useState(3)
@@ -37,14 +34,24 @@ function App() {
   const [molMassa, setMolMassa] = useState(''); const [molMM, setMolMM] = useState(''); const [molVol, setMolVol] = useState(''); const [molResultado, setMolResultado] = useState(null)
   const [dilC1, setDilC1] = useState(''); const [dilV1, setDilV1] = useState(''); const [dilC2, setDilC2] = useState(''); const [dilV2, setDilV2] = useState('') 
 
-  // --- NOVOS ESTADOS ---
+  // --- NOVOS ESTADOS (FUNCIONALIDADES EXTRAS) ---
   const [mmFormula, setMmFormula] = useState(''); const [mmResultado, setMmResultado] = useState(null)
   const [prepConc, setPrepConc] = useState(''); const [prepVol, setPrepVol] = useState(''); const [prepMM, setPrepMM] = useState(''); const [prepMassa, setPrepMassa] = useState(null)
   const [beerAbs, setBeerAbs] = useState(''); const [beerEpsilon, setBeerEpsilon] = useState(''); const [beerCaminho, setBeerCaminho] = useState('1'); const [beerConc, setBeerConc] = useState(null)
 
-  // --- PERSONALIZAÇÃO ---
+  // --- PERSONALIZAÇÃO (UI) ---
   const [isDarkMode, setIsDarkMode] = useState(true)
-  const [accentColor, setAccentColor] = useState('#6366f1') 
+  const [accentColor, setAccentColor] = useState('#6366f1') // Cor do Tema (Botões/Bordas)
+
+  // --- PERSONALIZAÇÃO (GRÁFICO) ---
+  const [mediaColor, setMediaColor] = useState('#6366f1')   // Cor da Linha Média
+  
+  // NOVO: Dicionário de cores para cada série individual
+  // Ex: { 0: '#4472C4', 1: '#ED7D31' ... }
+  const [seriesColors, setSeriesColors] = useState({
+    0: '#4472C4', 1: '#ED7D31', 2: '#A5A5A5', 3: '#FFC000', 4: '#5B9BD5'
+  })
+
   const [mostrarSeries, setMostrarSeries] = useState(true)
   const [grossuraMedia, setGrossuraMedia] = useState(4)
   const [grossuraGeralSeries, setGrossuraGeralSeries] = useState(2)
@@ -58,7 +65,25 @@ function App() {
   const [showModal, setShowModal] = useState(false)
   const [actionToDelete, setActionToDelete] = useState(null)
 
-  // EFEITO CSS
+  // --- ESTADO MENU MOBILE & GESTOS ---
+  const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false)
+  const touchStartY = useRef(0)
+  const touchEndY = useRef(0)
+  const sidebarRef = useRef(null)
+
+  // Lógica de Swipe (Arrastar) para Mobile
+  const handleTouchStart = (e) => { touchStartY.current = e.targetTouches[0].clientY }
+  const handleTouchMove = (e) => { touchEndY.current = e.targetTouches[0].clientY }
+  const handleTouchEnd = () => {
+    if (!touchStartY.current || !touchEndY.current) return;
+    const swipeDistance = touchStartY.current - touchEndY.current
+    const threshold = 50 
+    if (swipeDistance > threshold && !isMobileMenuOpen) setIsMobileMenuOpen(true)
+    if (swipeDistance < -threshold && isMobileMenuOpen) setIsMobileMenuOpen(false)
+    touchStartY.current = 0; touchEndY.current = 0
+  }
+
+  // EFEITO CSS (Aplica a cor do tema nas variáveis globais)
   useEffect(() => {
     const root = document.documentElement;
     root.style.setProperty('--primary', accentColor);
@@ -67,15 +92,23 @@ function App() {
     else document.body.classList.add('light-mode');
   }, [isDarkMode, accentColor]);
 
+  // --- FUNÇÃO PARA ATUALIZAR COR DE UMA SÉRIE ESPECÍFICA ---
+  const updateSeriesColor = (index, newColor) => {
+    setSeriesColors(prev => ({
+        ...prev,
+        [index]: newColor
+    }))
+  }
+
   // --- FUNÇÕES ANTIGAS ---
   const calcularMolaridade = () => { const m = parseFloat(molMassa); const mm = parseFloat(molMM); const v = parseFloat(molVol); if (m && mm && v) setMolResultado((m / (mm * (v / 1000))).toFixed(4)); }
   const calcularDiluicao = () => { 
       const c1 = parseFloat(dilC1); const v1 = parseFloat(dilV1); const c2 = parseFloat(dilC2); const v2 = parseFloat(dilV2);
-      if (c1 && v1 && c2 && !v2) alert(`V2 Calculado: ${((c1 * v1) / c2).toFixed(2)} mL`); 
-      else if (c1 && v1 && !c2 && v2) alert(`C2 Calculado: ${((c1 * v1) / v2).toFixed(4)} M`);
-      else if (!c1 && v1 && c2 && v2) alert(`C1 Calculado: ${((c2 * v2) / v1).toFixed(4)} M`);
-      else if (c1 && !v1 && c2 && v2) alert(`V1 Calculado: ${((c2 * v2) / c1).toFixed(2)} mL`);
-      else alert("Preencha 3 campos para calcular o 4º!");
+      if (c1 && v1 && c2 && !v2) alert(`V2: ${((c1 * v1) / c2).toFixed(2)} mL`); 
+      else if (c1 && v1 && !c2 && v2) alert(`C2: ${((c1 * v1) / v2).toFixed(4)} M`);
+      else if (!c1 && v1 && c2 && v2) alert(`C1: ${((c2 * v2) / v1).toFixed(4)} M`);
+      else if (c1 && !v1 && c2 && v2) alert(`V1: ${((c2 * v2) / c1).toFixed(2)} mL`);
+      else alert("Preencha 3 campos!");
   }
 
   // --- NOVAS FUNÇÕES (CHAMADAS API) ---
@@ -94,36 +127,73 @@ function App() {
   const executeDelete = () => { if (actionToDelete === 'row' && linhas.length > 1) { const n = [...linhas]; n.pop(); setLinhas(n); } else if (actionToDelete === 'col' && qtdColunas > 1) { setQtdColunas(qtdColunas - 1); } setShowModal(false) }
   const handleChange = (i, k, v) => { const n = [...linhas]; if (!n[i]) n[i] = {}; n[i][k] = v; setLinhas(n); }
 
-  // --- CÁLCULO AUTOMÁTICO DADOS (BLINDADO) ---
-  const timeoutRef = useRef(null)
+  // --- CÁLCULO AUTOMÁTICO DADOS ---
+  const timeoutRefAPI = useRef(null)
   const executarCalculoAPI = async () => {
     setStatus("Calculando...")
     try { const dt = linhas.map(r => { let o = { volume: parseFloat(r.volume) }; for(let i=0; i < qtdColunas; i++){ if(r[`ph${i}`]) o[`ph${i}`] = r[`ph${i}`] } return o }); const res = await axios.post(`${API_URL}/experimental/calcular`, dt); setResultado(res.data); setStatus("Atualizado") } catch (error) { console.error(error); setStatus("Erro na API") }
   }
   useEffect(() => {
     if(activeTab === 'dados') { 
-        if (timeoutRef.current) clearTimeout(timeoutRef.current)
-        timeoutRef.current = setTimeout(() => { executarCalculoAPI() }, 1000)
-        return () => clearTimeout(timeoutRef.current)
+        if (timeoutRefAPI.current) clearTimeout(timeoutRefAPI.current)
+        timeoutRefAPI.current = setTimeout(() => { executarCalculoAPI() }, 1000)
+        return () => clearTimeout(timeoutRefAPI.current)
     }
   }, [linhas, qtdColunas, activeTab]) 
 
-  // --- DADOS GRÁFICO ---
+  // --- DADOS GRÁFICO (CORES DINÂMICAS) ---
   const gerarDadosGrafico = () => {
     if (!resultado) return []
     let traces = []
-    const defaultColors = ['#4472C4', '#ED7D31', '#A5A5A5', '#FFC000', '#5B9BD5'];
-    if (mostrarSeries) { for (let i = 0; i < qtdColunas; i++) { const xData = []; const yData = []; linhas.forEach(row => { if (row.volume !== undefined && row[`ph${i}`] !== undefined && row[`ph${i}`] !== "") { xData.push(parseFloat(row.volume)); yData.push(parseFloat(String(row[`ph${i}`]).replace(',', '.'))) } }); if (xData.length > 0) { const style = customStyles[i] || {}; traces.push({ x: xData, y: yData, type: 'scatter', mode: 'lines+markers', name: `Série ${i + 1}`, line: { color: style.color || defaultColors[i % defaultColors.length], width: style.width || grossuraMedia, shape: 'spline' }, marker: { size: (style.width || grossuraMedia) + 4 }, showlegend: true, opacity: 0.9, connectgaps: true }) } } }
-    traces.push({ x: resultado.grafico.x, y: resultado.grafico.y, type: 'scatter', mode: 'lines+markers', name: nomeLegenda, line: {color: accentColor, width: grossuraMedia, shape: 'spline'}, marker: {color: isDarkMode ? '#fff' : '#000', size: grossuraMedia + 4, line: {color: accentColor, width: 2}}, error_y: { type: 'data', array: resultado.grafico.erro, visible: true, color: isDarkMode ? 'rgba(255,255,255,0.5)' : 'rgba(0,0,0,0.5)' }, connectgaps: true })
+    const defaultColors = ['#4472C4', '#ED7D31', '#A5A5A5', '#FFC000', '#5B9BD5']; // Fallback
+    
+    if (mostrarSeries) { 
+        for (let i = 0; i < qtdColunas; i++) { 
+            const xData = []; const yData = []; 
+            linhas.forEach(row => { 
+                if (row.volume !== undefined && row[`ph${i}`] !== undefined && row[`ph${i}`] !== "") { 
+                    xData.push(parseFloat(row.volume)); 
+                    yData.push(parseFloat(String(row[`ph${i}`]).replace(',', '.'))) 
+                } 
+            }); 
+            if (xData.length > 0) { 
+                // Usa a cor definida no estado ou uma cor padrão do fallback
+                const corSerie = seriesColors[i] || defaultColors[i % defaultColors.length];
+                
+                traces.push({ 
+                    x: xData, y: yData, 
+                    type: 'scatter', mode: 'lines+markers', 
+                    name: `Série ${i + 1}`, 
+                    line: { color: corSerie, width: grossuraGeralSeries, shape: 'spline' }, 
+                    marker: { size: (grossuraGeralSeries) + 4 }, 
+                    showlegend: true, opacity: 0.9, connectgaps: true 
+                }) 
+            } 
+        } 
+    }
+    
+    traces.push({ 
+        x: resultado.grafico.x, y: resultado.grafico.y, 
+        type: 'scatter', mode: 'lines+markers', 
+        name: nomeLegenda, 
+        line: {color: mediaColor, width: grossuraMedia, shape: 'spline'}, 
+        marker: {color: isDarkMode ? '#fff' : '#000', size: grossuraMedia + 4, line: {color: mediaColor, width: 2}}, 
+        error_y: { type: 'data', array: resultado.grafico.erro, visible: true, color: isDarkMode ? 'rgba(255,255,255,0.5)' : 'rgba(0,0,0,0.5)' }, 
+        connectgaps: true 
+    })
     return traces
   }
 
   return (
     <div className="dashboard-layout">
       
-      <aside className={`sidebar ${isMobileMenuOpen ? 'mobile-open' : ''}`}>
-        
-        {/* PUXADOR (SÓ APARECE NO MOBILE GRAÇAS AO CSS) */}
+      <aside 
+        ref={sidebarRef}
+        className={`sidebar ${isMobileMenuOpen ? 'mobile-open' : ''}`}
+        onTouchStart={handleTouchStart}
+        onTouchMove={handleTouchMove}
+        onTouchEnd={handleTouchEnd}
+      >
         <div className="mobile-pull-handle" onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}>
             <div className="handle-bar"></div>
             <span>{isMobileMenuOpen ? 'Fechar' : 'Menu'}</span>
@@ -132,8 +202,17 @@ function App() {
         <div className="brand">🧪 LabData Pro</div>
         
         <div className="sidebar-content">
+          
+          {/* --- TEMA E COR DO SISTEMA --- */}
           <div className="menu-group" style={{marginBottom: '20px'}}>
-             <div className="setting-item"><span>Tema</span><button className="theme-toggle" onClick={() => setIsDarkMode(!isDarkMode)}>{isDarkMode ? '🌙' : '☀️'}</button></div>
+             <div className="setting-item">
+                <span>Modo Escuro</span>
+                <button className="theme-toggle" onClick={() => setIsDarkMode(!isDarkMode)}>{isDarkMode ? '🌙' : '☀️'}</button>
+             </div>
+             <div className="setting-item">
+                <span>Cor do Sistema</span>
+                <input type="color" value={accentColor} onChange={(e) => setAccentColor(e.target.value)} className="color-picker"/>
+             </div>
           </div>
 
           <div className="menu-group">
@@ -157,10 +236,31 @@ function App() {
             <div className="menu-group settings-group">
                 <div className="menu-label">Gráfico</div>
                 <div className="setting-item"><span>Mostrar Séries</span><button className="theme-toggle" onClick={() => setMostrarSeries(!mostrarSeries)}>{mostrarSeries ? '👁️ ON' : '🚫 OFF'}</button></div>
-                <div className="input-group-sidebar"><label>Título</label><input className="input-sidebar" value={tituloGrafico} onChange={e => setTituloGrafico(e.target.value)} /></div>
+                
+                {/* COR MÉDIA */}
+                <div className="setting-item"><span>Cor Média</span><input type="color" value={mediaColor} onChange={(e) => setMediaColor(e.target.value)} className="color-picker"/></div>
+                
+                {/* LISTA DINÂMICA DE CORES DAS SÉRIES */}
+                {/* Cria um input color para cada coluna existente */}
+                <div className="menu-label" style={{marginTop:'10px'}}>Cores das Séries</div>
+                {[...Array(qtdColunas)].map((_, i) => (
+                    <div key={i} className="setting-item" style={{fontSize:'0.8rem'}}>
+                        <span>Série {i + 1}</span>
+                        <input 
+                            type="color" 
+                            // Se já existir cor salva, usa ela. Senão, usa padrão.
+                            value={seriesColors[i] || ['#4472C4', '#ED7D31', '#A5A5A5', '#FFC000', '#5B9BD5'][i % 5]} 
+                            onChange={(e) => updateSeriesColor(i, e.target.value)} 
+                            className="color-picker"
+                            style={{width:'30px', height:'30px'}} // Um pouco menor para caber
+                        />
+                    </div>
+                ))}
+
+                <div className="input-group-sidebar" style={{marginTop:'15px'}}><label>Título</label><input className="input-sidebar" value={tituloGrafico} onChange={e => setTituloGrafico(e.target.value)} /></div>
                 <div className="input-group-sidebar"><label>Eixo X</label><input className="input-sidebar" value={eixoX} onChange={e => setEixoX(e.target.value)} /></div>
                 <div className="input-group-sidebar"><label>Eixo Y</label><input className="input-sidebar" value={eixoY} onChange={e => setEixoY(e.target.value)} /></div>
-                <div className="setting-item"><span>Cor Média</span><input type="color" value={accentColor} onChange={(e) => setAccentColor(e.target.value)} className="color-picker"/></div>
+                
                 <div className="input-group-sidebar">
                     <label style={{display:'flex', justifyContent:'space-between'}}>Grossura <span>{grossuraMedia}px</span></label>
                     <input type="range" min="1" max="10" value={grossuraMedia} onChange={(e) => setGrossuraMedia(parseInt(e.target.value))} style={{width:'100%'}} />
@@ -216,43 +316,15 @@ function App() {
 
         {activeTab === 'molaridade' && (<div className="card" style={{maxWidth: '600px', margin: '0 auto'}}><h2>Molaridade</h2><div className="input-group-sidebar"><label>Massa (g)</label><input className="input-sidebar" type="number" value={molMassa} onChange={e => setMolMassa(e.target.value)} /></div><div className="input-group-sidebar"><label>MM (g/mol)</label><input className="input-sidebar" type="number" value={molMM} onChange={e => setMolMM(e.target.value)} /></div><div className="input-group-sidebar"><label>Vol (mL)</label><input className="input-sidebar" type="number" value={molVol} onChange={e => setMolVol(e.target.value)} /></div><button className="btn-sidebar" onClick={calcularMolaridade}>CALCULAR</button>{molResultado && (<div style={{marginTop: '20px', fontSize: '2rem', textAlign: 'center', color: 'var(--primary)'}}>{molResultado} M</div>)}</div>)}
         
-        {/* --- ABA DILUIÇÃO SEPARADA E REORGANIZADA --- */}
         {activeTab === 'diluicao' && (
              <div className="card" style={{maxWidth: '800px', margin: '0 auto'}}>
                     <h2>Calculadora de Diluição</h2>
                     <p style={{color: 'var(--text-muted)', marginBottom: '20px'}}>Preencha 3 campos e deixe vazio o que você quer descobrir.</p>
-                    
                     <div className="diluicao-wrapper">
-                        {/* BLOCO 1: SOLUÇÃO INICIAL */}
-                        <div className="diluicao-block">
-                            <h3>🧪 Solução Inicial</h3>
-                            <div className="input-group-sidebar">
-                                <label>Concentração (C1)</label>
-                                <input className="input-sidebar" type="number" placeholder="Ex: 1.5 M" value={dilC1} onChange={e => setDilC1(e.target.value)} />
-                            </div>
-                            <div className="input-group-sidebar">
-                                <label>Volume (V1)</label>
-                                <input className="input-sidebar" type="number" placeholder="Ex: 20 mL" value={dilV1} onChange={e => setDilV1(e.target.value)} />
-                            </div>
-                        </div>
-
-                        {/* SETA SEPARADORA */}
+                        <div className="diluicao-block"><h3>🧪 Solução Inicial</h3><div className="input-group-sidebar"><label>Concentração (C1)</label><input className="input-sidebar" type="number" placeholder="Ex: 1.5 M" value={dilC1} onChange={e => setDilC1(e.target.value)} /></div><div className="input-group-sidebar"><label>Volume (V1)</label><input className="input-sidebar" type="number" placeholder="Ex: 20 mL" value={dilV1} onChange={e => setDilV1(e.target.value)} /></div></div>
                         <div className="diluicao-arrow">➔</div>
-
-                        {/* BLOCO 2: SOLUÇÃO FINAL */}
-                        <div className="diluicao-block">
-                            <h3>💧 Solução Final</h3>
-                            <div className="input-group-sidebar">
-                                <label>Concentração (C2)</label>
-                                <input className="input-sidebar" type="number" placeholder="-" value={dilC2} onChange={e => setDilC2(e.target.value)} />
-                            </div>
-                            <div className="input-group-sidebar">
-                                <label>Volume (V2)</label>
-                                <input className="input-sidebar" type="number" placeholder="-" value={dilV2} onChange={e => setDilV2(e.target.value)} />
-                            </div>
-                        </div>
+                        <div className="diluicao-block"><h3>💧 Solução Final</h3><div className="input-group-sidebar"><label>Concentração (C2)</label><input className="input-sidebar" type="number" placeholder="-" value={dilC2} onChange={e => setDilC2(e.target.value)} /></div><div className="input-group-sidebar"><label>Volume (V2)</label><input className="input-sidebar" type="number" placeholder="-" value={dilV2} onChange={e => setDilV2(e.target.value)} /></div></div>
                     </div>
-
                     <button className="btn-sidebar" style={{background: 'var(--primary)', color: 'white', marginTop: '25px', justifyContent: 'center', height: '50px', fontSize:'1.1rem'}} onClick={calcularDiluicao}>CALCULAR</button>
              </div>
         )}
