@@ -20,9 +20,15 @@ const API_URL = import.meta.env.PROD
   ? 'https://quimica-analitica.onrender.com' 
   : ''; 
 
+// A URL de ativação é a própria URL do back-end
+const BACKEND_ACTIVATION_URL = API_URL; 
+
 function App() {
   // --- NAVEGAÇÃO ---
   const [activeTab, setActiveTab] = useState('dados')
+
+  // NOVO ESTADO: Status do Back-end para controle de carregamento/ativação
+  const [backendStatus, setBackendStatus] = useState('checking') // 'checking', 'active', 'inactive'
 
   // --- ESTADOS: TRATAMENTO DE DADOS ---
   const [qtdColunas, setQtdColunas] = useState(3)
@@ -92,6 +98,62 @@ function App() {
     else document.body.classList.add('light-mode');
   }, [isDarkMode, accentColor]);
 
+
+  // =========================================================================
+  // NOVO: LÓGICA DE VERIFICAÇÃO E REDIRECIONAMENTO DO BACK-END
+  // =========================================================================
+  useEffect(() => {
+    // Se não estiver em produção (ambiente local), assume que o back-end está ativo localmente
+    if (!import.meta.env.PROD) {
+        setBackendStatus('active');
+        return;
+    }
+
+    const checkBackendStatus = async () => {
+      try {
+        // Tenta fazer uma requisição simples (HEAD é mais rápido) para um endpoint que não requer body.
+        // O Render geralmente falha o fetch completamente se o servidor estiver dormindo.
+        // Usando um endpoint leve como /quimica/tabela.
+        const response = await fetch(BACKEND_ACTIVATION_URL + '/quimica/tabela', { 
+            method: 'HEAD', 
+            signal: AbortSignal.timeout(5000) // 5 segundos de timeout para cold start
+        }); 
+        
+        // Se a requisição não falhou (status 200, 404, etc.), o servidor está ativo/acordando.
+        setBackendStatus('active');
+
+      } catch (error) {
+        // Falha de rede/timeout. Servidor está dormindo.
+        console.error("Back-end inativo ou não respondeu (Redirecionando para ativar):", error);
+        setBackendStatus('inactive');
+      }
+    };
+
+    checkBackendStatus();
+
+  }, []); // Executa apenas na montagem
+
+
+  // Lógica de Renderização Condicional:
+  if (backendStatus === 'checking') {
+    return <div className="loading-screen" style={{height:'100vh', display:'flex', alignItems:'center', justifyContent:'center', fontSize:'1.5rem'}}>Verificando status do servidor back-end...</div>;
+  }
+
+  if (backendStatus === 'inactive') {
+    // Se inativo, redireciona o usuário para a URL do back-end para ativá-lo.
+    // O back-end, por sua vez, redirecionará automaticamente de volta para este front-end.
+    window.location.href = BACKEND_ACTIVATION_URL;
+    
+    return (
+      <div className="loading-screen" style={{height:'100vh', display:'flex', flexDirection:'column', alignItems:'center', justifyContent:'center', textAlign:'center', fontSize:'1.2rem'}}>
+        <h2>Servidor Back-end Inativo</h2>
+        <p>Redirecionando para ativar o servidor... Por favor, aguarde.</p>
+        <p>Se nada acontecer em alguns segundos, clique <a href={BACKEND_ACTIVATION_URL} target="_blank" rel="noopener noreferrer">aqui</a>.</p>
+      </div>
+    );
+  }
+  // =========================================================================
+
   // --- FUNÇÃO PARA ATUALIZAR COR DE UMA SÉRIE ESPECÍFICA ---
   const updateSeriesColor = (index, newColor) => {
     setSeriesColors(prev => ({
@@ -134,12 +196,13 @@ function App() {
     try { const dt = linhas.map(r => { let o = { volume: parseFloat(r.volume) }; for(let i=0; i < qtdColunas; i++){ if(r[`ph${i}`]) o[`ph${i}`] = r[`ph${i}`] } return o }); const res = await axios.post(`${API_URL}/experimental/calcular`, dt); setResultado(res.data); setStatus("Atualizado") } catch (error) { console.error(error); setStatus("Erro na API") }
   }
   useEffect(() => {
-    if(activeTab === 'dados') { 
+    // Garante que só executa se o backend já estiver ativo
+    if(activeTab === 'dados' && backendStatus === 'active') { 
         if (timeoutRefAPI.current) clearTimeout(timeoutRefAPI.current)
         timeoutRefAPI.current = setTimeout(() => { executarCalculoAPI() }, 1000)
         return () => clearTimeout(timeoutRefAPI.current)
     }
-  }, [linhas, qtdColunas, activeTab]) 
+  }, [linhas, qtdColunas, activeTab, backendStatus]) // Adiciona backendStatus como dependência
 
   // --- DADOS GRÁFICO (CORES DINÂMICAS) ---
   const gerarDadosGrafico = () => {
