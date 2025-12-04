@@ -1,5 +1,6 @@
 import { useState, useEffect, useRef } from 'react'
 import axios from 'axios'
+import { useNavigate } from 'react-router-dom';
 import './App.css'
 
 // --- IMPORTAÇÃO DOS ANÚNCIOS (Não mexer) ---
@@ -23,7 +24,7 @@ const API_URL = import.meta.env.PROD
 function App() {
   // --- NAVEGAÇÃO ---
   const [activeTab, setActiveTab] = useState('dados')
-
+  const navigate = useNavigate();
   // --- ESTADOS: TRATAMENTO DE DADOS ---
   const [qtdColunas, setQtdColunas] = useState(3)
   const [linhas, setLinhas] = useState([{ volume: 0 }, { volume: 1 }, { volume: 2 }])
@@ -221,7 +222,10 @@ function App() {
             <span>{isMobileMenuOpen ? 'Fechar' : 'Menu'}</span>
         </div>
 
-        <div className="brand">🧪 LabData Pro</div>
+          <div className="brand" onClick={() => navigate('/')} style={{cursor: 'pointer'}}>
+      🧪 LabData Pro
+      <div style={{fontSize: '0.7rem', color: 'var(--text-muted)', fontWeight:'normal'}}>Voltar ao Menu</div>
+  </div>
         
         <div className="sidebar-content">
           <div className="menu-group" style={{marginBottom: '20px'}}>
