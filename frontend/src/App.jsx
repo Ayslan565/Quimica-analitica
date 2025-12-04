@@ -12,7 +12,7 @@ const Plot = createPlotlyComponent.default
   ? createPlotlyComponent.default(Plotly) 
   : createPlotlyComponent(Plotly)
 
-// --- NOVA IMPORTAÇÃO: TABELA PERIÓDICA ---
+// --- IMPORTAÇÃO: TABELA PERIÓDICA ---
 import TabelaPeriodica from './TabelaPeriodica'
 
 // --- CONFIGURAÇÃO DA API ---
@@ -34,20 +34,34 @@ function App() {
   const [molMassa, setMolMassa] = useState(''); const [molMM, setMolMM] = useState(''); const [molVol, setMolVol] = useState(''); const [molResultado, setMolResultado] = useState(null)
   const [dilC1, setDilC1] = useState(''); const [dilV1, setDilV1] = useState(''); const [dilC2, setDilC2] = useState(''); const [dilV2, setDilV2] = useState('') 
 
-  // --- NOVOS ESTADOS (FUNCIONALIDADES EXTRAS) ---
+  // --- ESTADOS: FUNCIONALIDADES EXTRAS ---
   const [mmFormula, setMmFormula] = useState(''); const [mmResultado, setMmResultado] = useState(null)
   const [prepConc, setPrepConc] = useState(''); const [prepVol, setPrepVol] = useState(''); const [prepMM, setPrepMM] = useState(''); const [prepMassa, setPrepMassa] = useState(null)
   const [beerAbs, setBeerAbs] = useState(''); const [beerEpsilon, setBeerEpsilon] = useState(''); const [beerCaminho, setBeerCaminho] = useState('1'); const [beerConc, setBeerConc] = useState(null)
 
+  // --- ESTADO: TITULAÇÃO ---
+  const [titCa, setTitCa] = useState('')
+  const [titVa, setTitVa] = useState('')
+  const [titCb, setTitCb] = useState('')
+  const [titPka, setTitPka] = useState('4.75')
+  const [titIsWeak, setTitIsWeak] = useState(false)
+  const [titResultado, setTitResultado] = useState(null)
+
+  // --- NOVO ESTADO: TAMPÃO ---
+  const [bufPh, setBufPh] = useState('')
+  const [bufPka, setBufPka] = useState('4.75')
+  const [bufConc, setBufConc] = useState('0.1')
+  const [bufVol, setBufVol] = useState('100')
+  const [bufMMAcido, setBufMMAcido] = useState('60.05') // Ex: Acético
+  const [bufMMSal, setBufMMSal] = useState('82.03')   // Ex: Acetato de Sódio
+  const [bufResultado, setBufResultado] = useState(null)
+
   // --- PERSONALIZAÇÃO (UI) ---
   const [isDarkMode, setIsDarkMode] = useState(true)
-  const [accentColor, setAccentColor] = useState('#6366f1') // Cor do Tema (Botões/Bordas)
+  const [accentColor, setAccentColor] = useState('#6366f1') 
 
   // --- PERSONALIZAÇÃO (GRÁFICO) ---
-  const [mediaColor, setMediaColor] = useState('#6366f1')   // Cor da Linha Média
-  
-  // NOVO: Dicionário de cores para cada série individual
-  // Ex: { 0: '#4472C4', 1: '#ED7D31' ... }
+  const [mediaColor, setMediaColor] = useState('#6366f1')   
   const [seriesColors, setSeriesColors] = useState({
     0: '#4472C4', 1: '#ED7D31', 2: '#A5A5A5', 3: '#FFC000', 4: '#5B9BD5'
   })
@@ -55,7 +69,6 @@ function App() {
   const [mostrarSeries, setMostrarSeries] = useState(true)
   const [grossuraMedia, setGrossuraMedia] = useState(4)
   const [grossuraGeralSeries, setGrossuraGeralSeries] = useState(2)
-  const [customStyles, setCustomStyles] = useState({})
   const [tituloGrafico, setTituloGrafico] = useState('Média NaOH 0,01 M')
   const [eixoX, setEixoX] = useState('Volume em gotas')
   const [eixoY, setEixoY] = useState('pH')
@@ -71,7 +84,6 @@ function App() {
   const touchEndY = useRef(0)
   const sidebarRef = useRef(null)
 
-  // Lógica de Swipe (Arrastar) para Mobile
   const handleTouchStart = (e) => { touchStartY.current = e.targetTouches[0].clientY }
   const handleTouchMove = (e) => { touchEndY.current = e.targetTouches[0].clientY }
   const handleTouchEnd = () => {
@@ -83,7 +95,7 @@ function App() {
     touchStartY.current = 0; touchEndY.current = 0
   }
 
-  // EFEITO CSS (Aplica a cor do tema nas variáveis globais)
+  // EFEITO CSS
   useEffect(() => {
     const root = document.documentElement;
     root.style.setProperty('--primary', accentColor);
@@ -92,15 +104,11 @@ function App() {
     else document.body.classList.add('light-mode');
   }, [isDarkMode, accentColor]);
 
-  // --- FUNÇÃO PARA ATUALIZAR COR DE UMA SÉRIE ESPECÍFICA ---
   const updateSeriesColor = (index, newColor) => {
-    setSeriesColors(prev => ({
-        ...prev,
-        [index]: newColor
-    }))
+    setSeriesColors(prev => ({ ...prev, [index]: newColor }))
   }
 
-  // --- FUNÇÕES ANTIGAS ---
+  // --- CÁLCULOS ---
   const calcularMolaridade = () => { const m = parseFloat(molMassa); const mm = parseFloat(molMM); const v = parseFloat(molVol); if (m && mm && v) setMolResultado((m / (mm * (v / 1000))).toFixed(4)); }
   const calcularDiluicao = () => { 
       const c1 = parseFloat(dilC1); const v1 = parseFloat(dilV1); const c2 = parseFloat(dilC2); const v2 = parseFloat(dilV2);
@@ -111,15 +119,33 @@ function App() {
       else alert("Preencha 3 campos!");
   }
 
-  // --- NOVAS FUNÇÕES (CHAMADAS API) ---
+  // --- API ---
   const chamarAPI = async (endpoint, payload, setFunction) => {
     try { const res = await axios.post(`${API_URL}/quimica/${endpoint}`, payload); if (res.data.erro) alert(res.data.erro); else setFunction(res.data); } catch (e) { alert("Erro na API"); console.error(e); }
   }
   const calcMassaMolar = () => { if(!mmFormula) return; chamarAPI('massa-molar', { formula: mmFormula }, setMmResultado) }
   const calcPreparo = () => { if(!prepConc || !prepVol || !prepMM) return; chamarAPI('preparo', { concentracao: parseFloat(prepConc), volume: parseFloat(prepVol), massa_molar: parseFloat(prepMM) }, setPrepMassa) }
   const calcBeer = () => { if(!beerAbs || !beerEpsilon || !beerCaminho) return; chamarAPI('beer', { absorbancia: parseFloat(beerAbs), epsilon: parseFloat(beerEpsilon), caminho: parseFloat(beerCaminho) }, setBeerConc) }
+  const calcTitulacao = () => {
+    if(!titCa || !titVa || !titCb) return;
+    const payload = { conc_acido: parseFloat(titCa), vol_acido: parseFloat(titVa), conc_base: parseFloat(titCb), pka: titIsWeak ? parseFloat(titPka) : null }
+    chamarAPI('titulacao', payload, setTitResultado)
+  }
+  // NOVO: Cálculo de Tampão
+  const calcTampao = () => {
+      if(!bufPh || !bufPka || !bufConc || !bufVol) return;
+      const payload = {
+          ph: parseFloat(bufPh),
+          pka: parseFloat(bufPka),
+          conc_total: parseFloat(bufConc),
+          volume: parseFloat(bufVol),
+          mm_acido: parseFloat(bufMMAcido),
+          mm_sal: parseFloat(bufMMSal)
+      }
+      chamarAPI('tampao', payload, setBufResultado)
+  }
 
-  // --- FUNÇÕES DE TABELA (DADOS) ---
+  // --- TRATAMENTO DE DADOS ---
   const handlePaste = (e, r, c, t) => { e.preventDefault(); const d = e.clipboardData.getData('text'); const rw = d.split(/\r\n|\n|\r/).filter(x => x.trim()); const nl = [...linhas]; rw.forEach((rx, i) => { const idx = r + i; if (!nl[idx]) nl[idx] = {}; const cls = rx.split('\t'); cls.forEach((val, j) => { const cv = val.trim().replace(',', '.'); if (t === 'vol') { if (j === 0) nl[idx].volume = cv; else if (j-1 < qtdColunas) nl[idx][`ph${j-1}`] = cv; } else if (t === 'ph' && c+j < qtdColunas) nl[idx][`ph${c+j}`] = cv; }); }); setLinhas(nl); };
   const addLinha = () => { setLinhas([...linhas, { volume: (parseFloat(linhas[linhas.length-1]?.volume)||0) + 1 }]) }
   const addColuna = () => setQtdColunas(qtdColunas + 1)
@@ -127,7 +153,6 @@ function App() {
   const executeDelete = () => { if (actionToDelete === 'row' && linhas.length > 1) { const n = [...linhas]; n.pop(); setLinhas(n); } else if (actionToDelete === 'col' && qtdColunas > 1) { setQtdColunas(qtdColunas - 1); } setShowModal(false) }
   const handleChange = (i, k, v) => { const n = [...linhas]; if (!n[i]) n[i] = {}; n[i][k] = v; setLinhas(n); }
 
-  // --- CÁLCULO AUTOMÁTICO DADOS ---
   const timeoutRefAPI = useRef(null)
   const executarCalculoAPI = async () => {
     setStatus("Calculando...")
@@ -141,11 +166,10 @@ function App() {
     }
   }, [linhas, qtdColunas, activeTab]) 
 
-  // --- DADOS GRÁFICO (CORES DINÂMICAS) ---
   const gerarDadosGrafico = () => {
     if (!resultado) return []
     let traces = []
-    const defaultColors = ['#4472C4', '#ED7D31', '#A5A5A5', '#FFC000', '#5B9BD5']; // Fallback
+    const defaultColors = ['#4472C4', '#ED7D31', '#A5A5A5', '#FFC000', '#5B9BD5'];
     
     if (mostrarSeries) { 
         for (let i = 0; i < qtdColunas; i++) { 
@@ -200,8 +224,6 @@ function App() {
         <div className="brand">🧪 LabData Pro</div>
         
         <div className="sidebar-content">
-          
-          {/* --- TEMA E COR DO SISTEMA --- */}
           <div className="menu-group" style={{marginBottom: '20px'}}>
              <div className="setting-item">
                 <span>Modo Escuro</span>
@@ -216,6 +238,8 @@ function App() {
           <div className="menu-group">
             <div className="menu-label">Ferramentas</div>
             <button className={`btn-sidebar ${activeTab === 'dados' ? 'active' : ''}`} onClick={() => {setActiveTab('dados'); setIsMobileMenuOpen(false)}}>📉 Tratamento</button>
+            <button className={`btn-sidebar ${activeTab === 'titulacao' ? 'active' : ''}`} onClick={() => {setActiveTab('titulacao'); setIsMobileMenuOpen(false)}}>⚗️ Titulação</button>
+            <button className={`btn-sidebar ${activeTab === 'tampao' ? 'active' : ''}`} onClick={() => {setActiveTab('tampao'); setIsMobileMenuOpen(false)}}>🌡️ Tampão</button>
             <button className={`btn-sidebar ${activeTab === 'molaridade' ? 'active' : ''}`} onClick={() => {setActiveTab('molaridade'); setIsMobileMenuOpen(false)}}>🧪 Molaridade</button>
             <button className={`btn-sidebar ${activeTab === 'diluicao' ? 'active' : ''}`} onClick={() => {setActiveTab('diluicao'); setIsMobileMenuOpen(false)}}>💧 Diluição</button>
             
@@ -232,19 +256,12 @@ function App() {
 
           {activeTab === 'dados' && (
             <div className="menu-group settings-group">
-                {/* --- BOTÕES DE EDITAR TABELA (ATUALIZADO) --- */}
                 <div className="menu-label">Tabela</div>
-                
-                {/* Contêiner Flex para alinhar os botões em duas colunas */}
                 <div style={{display: 'flex', gap: '10px', width: '100%', marginBottom: '15px'}}>
-                    
-                    {/* Coluna Esquerda: Adicionar - Borda com a cor do tema */}
                     <div style={{flex: 1, display: 'flex', flexDirection: 'column', gap: '5px'}}>
                         <button className="btn-sidebar" style={{border: '1px solid var(--primary)'}} onClick={addLinha}><span>➕</span> Linha</button>
                         <button className="btn-sidebar" style={{border: '1px solid var(--primary)'}} onClick={addColuna}><span>➕</span> Coluna</button>
                     </div>
-
-                    {/* Coluna Direita: Remover (Vermelho) - Borda vermelha e ícone de menos */}
                     <div style={{flex: 1, display: 'flex', flexDirection: 'column', gap: '5px'}}>
                         <button className="btn-sidebar danger" style={{border: '1px solid #ef4444'}} onClick={() => confirmDelete('row')}><span>➖</span> Linha</button>
                         <button className="btn-sidebar danger" style={{border: '1px solid #ef4444'}} onClick={() => confirmDelete('col')}><span>➖</span> Coluna</button>
@@ -253,33 +270,10 @@ function App() {
 
                 <div className="menu-label">Gráfico</div>
                 <div className="setting-item"><span>Mostrar Séries</span><button className="theme-toggle" onClick={() => setMostrarSeries(!mostrarSeries)}>{mostrarSeries ? '👁️ ON' : '🚫 OFF'}</button></div>
-                
-                {/* COR MÉDIA */}
                 <div className="setting-item"><span>Cor Média</span><input type="color" value={mediaColor} onChange={(e) => setMediaColor(e.target.value)} className="color-picker"/></div>
-                
-                {/* LISTA DINÂMICA DE CORES DAS SÉRIES */}
-                <div className="menu-label" style={{marginTop:'10px'}}>Cores das Séries</div>
-                {[...Array(qtdColunas)].map((_, i) => (
-                    <div key={i} className="setting-item" style={{fontSize:'0.8rem'}}>
-                        <span>Série {i + 1}</span>
-                        <input 
-                            type="color" 
-                            value={seriesColors[i] || ['#4472C4', '#ED7D31', '#A5A5A5', '#FFC000', '#5B9BD5'][i % 5]} 
-                            onChange={(e) => updateSeriesColor(i, e.target.value)} 
-                            className="color-picker"
-                            style={{width:'30px', height:'30px'}} 
-                        />
-                    </div>
-                ))}
-
                 <div className="input-group-sidebar" style={{marginTop:'15px'}}><label>Título</label><input className="input-sidebar" value={tituloGrafico} onChange={e => setTituloGrafico(e.target.value)} /></div>
                 <div className="input-group-sidebar"><label>Eixo X</label><input className="input-sidebar" value={eixoX} onChange={e => setEixoX(e.target.value)} /></div>
                 <div className="input-group-sidebar"><label>Eixo Y</label><input className="input-sidebar" value={eixoY} onChange={e => setEixoY(e.target.value)} /></div>
-                
-                <div className="input-group-sidebar">
-                    <label style={{display:'flex', justifyContent:'space-between'}}>Grossura <span>{grossuraMedia}px</span></label>
-                    <input type="range" min="1" max="10" value={grossuraMedia} onChange={(e) => setGrossuraMedia(parseInt(e.target.value))} style={{width:'100%'}} />
-                </div>
             </div>
           )}
         </div>
@@ -327,6 +321,111 @@ function App() {
             </>
         )}
         
+        {activeTab === 'titulacao' && (
+            <div className="card" style={{maxWidth: '800px', margin: '0 auto', padding: '30px'}}>
+                <h2 style={{textAlign: 'center', marginBottom: '30px'}}>Simulador de Titulação</h2>
+                
+                <div className="form-grid" style={{display:'grid', gridTemplateColumns:'1fr 1fr', gap:'25px'}}>
+                    <div style={{display: 'flex', flexDirection: 'column', gap: '10px'}}>
+                        <label className="input-group-sidebar" style={{fontSize: '1rem', fontWeight: '500', marginBottom:0, padding:0}}>Concentração Ácido (mol/L)</label>
+                        <input className="input-sidebar" type="number" placeholder="Ex: 0.1" value={titCa} onChange={e => setTitCa(e.target.value)} style={{padding: '12px', width: '100%', boxSizing: 'border-box'}} />
+                    </div>
+                    <div style={{display: 'flex', flexDirection: 'column', gap: '10px'}}>
+                        <label className="input-group-sidebar" style={{fontSize: '1rem', fontWeight: '500', marginBottom:0, padding:0}}>Volume Ácido (mL)</label>
+                        <input className="input-sidebar" type="number" placeholder="Ex: 25" value={titVa} onChange={e => setTitVa(e.target.value)} style={{padding: '12px', width: '100%', boxSizing: 'border-box'}} />
+                    </div>
+                    <div style={{display: 'flex', flexDirection: 'column', gap: '10px'}}>
+                        <label className="input-group-sidebar" style={{fontSize: '1rem', fontWeight: '500', marginBottom:0, padding:0}}>Concentração Base (mol/L)</label>
+                        <input className="input-sidebar" type="number" placeholder="Ex: 0.1" value={titCb} onChange={e => setTitCb(e.target.value)} style={{padding: '12px', width: '100%', boxSizing: 'border-box'}} />
+                    </div>
+                    <div style={{display:'flex', flexDirection: 'column', gap:'10px', justifyContent: 'end'}}>
+                        <label className="input-group-sidebar" style={{fontSize: '1rem', fontWeight: '500', marginBottom:0, padding:0}}>Tipo de Ácido</label>
+                        <button className="theme-toggle" onClick={() => setTitIsWeak(!titIsWeak)} style={{width: '100%', padding: '12px', justifyContent: 'center'}}>
+                            {titIsWeak ? '✅ ÁCIDO FRACO' : '⚡ ÁCIDO FORTE'}
+                        </button>
+                    </div>
+                    {titIsWeak && (
+                        <div style={{display: 'flex', flexDirection: 'column', gap: '10px', gridColumn: '1 / -1', animation: 'fadeIn 0.3s'}}>
+                            <label className="input-group-sidebar" style={{fontSize: '1rem', fontWeight: '500', marginBottom:0, padding:0}}>Valor do pKa</label>
+                            <input className="input-sidebar" type="number" placeholder="Ex: 4.75" value={titPka} onChange={e => setTitPka(e.target.value)} style={{padding: '12px', width: '100%', boxSizing: 'border-box'}} />
+                        </div>
+                    )}
+                </div>
+
+                <button className="btn-sidebar" onClick={calcTitulacao} style={{marginTop: '30px', width: '100%', justifyContent: 'center', padding: '15px', fontSize: '1.1rem', background: 'var(--primary)', color: 'white'}}>GERAR CURVA DE TITULAÇÃO</button>
+                
+                {titResultado && (
+                    <div style={{marginTop: '30px', borderTop: '1px solid var(--primary-soft)', paddingTop: '20px'}}>
+                        <Plot 
+                           data={[{x: titResultado.volume_base, y: titResultado.ph, type: 'scatter', mode: 'lines', line: {color: accentColor, width: 3}}]}
+                           layout={{ title: `Curva de ${titResultado.tipo}`, xaxis: {title: 'Volume Base (mL)', gridcolor: isDarkMode?'#333':'#eee'}, yaxis: {title: 'pH', range:[0,14], gridcolor: isDarkMode?'#333':'#eee'}, paper_bgcolor: 'transparent', plot_bgcolor: 'transparent', font: {color: isDarkMode ? '#ccc' : '#333'}}}
+                           useResizeHandler={true}
+                           style={{width:'100%', height:'400px'}}
+                        />
+                        <div style={{textAlign:'center', marginTop:'15px', padding:'15px', background:'var(--primary-soft)', borderRadius:'8px'}}>Ponto de Equivalência: <strong style={{fontSize: '1.2rem'}}>{titResultado.ponto_equivalencia} mL</strong></div>
+                    </div>
+                )}
+            </div>
+        )}
+        
+        {/* --- ABA TAMPÃO (NOVO) --- */}
+        {activeTab === 'tampao' && (
+             <div className="card" style={{maxWidth: '800px', margin: '0 auto', padding: '30px'}}>
+                <h2 style={{textAlign: 'center', marginBottom: '30px'}}>Calculadora de Tampão</h2>
+                <p style={{textAlign: 'center', marginBottom: '30px', color: 'var(--text-muted)'}}>Mistura de Ácido e Sal Conjugado (Henderson-Hasselbalch)</p>
+
+                <div className="form-grid" style={{display:'grid', gridTemplateColumns:'1fr 1fr', gap:'25px'}}>
+                    <div style={{display: 'flex', flexDirection: 'column', gap: '10px'}}>
+                        <label className="input-group-sidebar" style={{fontSize: '1rem', fontWeight: '500', marginBottom:0, padding:0}}>pH Desejado</label>
+                        <input className="input-sidebar" type="number" value={bufPh} onChange={e => setBufPh(e.target.value)} placeholder="Ex: 5.0" style={{padding: '12px', width: '100%', boxSizing: 'border-box'}} />
+                    </div>
+                    <div style={{display: 'flex', flexDirection: 'column', gap: '10px'}}>
+                        <label className="input-group-sidebar" style={{fontSize: '1rem', fontWeight: '500', marginBottom:0, padding:0}}>pKa do Ácido</label>
+                        <input className="input-sidebar" type="number" value={bufPka} onChange={e => setBufPka(e.target.value)} placeholder="Ex: 4.75" style={{padding: '12px', width: '100%', boxSizing: 'border-box'}} />
+                    </div>
+                    <div style={{display: 'flex', flexDirection: 'column', gap: '10px'}}>
+                        <label className="input-group-sidebar" style={{fontSize: '1rem', fontWeight: '500', marginBottom:0, padding:0}}>Concentração Total (M)</label>
+                        <input className="input-sidebar" type="number" value={bufConc} onChange={e => setBufConc(e.target.value)} placeholder="Ex: 0.1" style={{padding: '12px', width: '100%', boxSizing: 'border-box'}} />
+                    </div>
+                    <div style={{display: 'flex', flexDirection: 'column', gap: '10px'}}>
+                        <label className="input-group-sidebar" style={{fontSize: '1rem', fontWeight: '500', marginBottom:0, padding:0}}>Volume Total (mL)</label>
+                        <input className="input-sidebar" type="number" value={bufVol} onChange={e => setBufVol(e.target.value)} placeholder="Ex: 100" style={{padding: '12px', width: '100%', boxSizing: 'border-box'}} />
+                    </div>
+                    <div style={{display: 'flex', flexDirection: 'column', gap: '10px'}}>
+                        <label className="input-group-sidebar" style={{fontSize: '1rem', fontWeight: '500', marginBottom:0, padding:0}}>MM Ácido (g/mol)</label>
+                        <input className="input-sidebar" type="number" value={bufMMAcido} onChange={e => setBufMMAcido(e.target.value)} placeholder="Ex: 60.05" style={{padding: '12px', width: '100%', boxSizing: 'border-box'}} />
+                    </div>
+                    <div style={{display: 'flex', flexDirection: 'column', gap: '10px'}}>
+                        <label className="input-group-sidebar" style={{fontSize: '1rem', fontWeight: '500', marginBottom:0, padding:0}}>MM Sal (g/mol)</label>
+                        <input className="input-sidebar" type="number" value={bufMMSal} onChange={e => setBufMMSal(e.target.value)} placeholder="Ex: 82.03" style={{padding: '12px', width: '100%', boxSizing: 'border-box'}} />
+                    </div>
+                </div>
+
+                <button className="btn-sidebar" onClick={calcTampao} style={{marginTop: '30px', width: '100%', justifyContent: 'center', padding: '15px', fontSize: '1.1rem', background: 'var(--primary)', color: 'white'}}>CALCULAR RECEITA</button>
+
+                {bufResultado && (
+                    <div style={{marginTop: '30px', borderTop: '1px solid var(--primary-soft)', paddingTop: '20px', animation: 'fadeIn 0.5s'}}>
+                        <h3 style={{textAlign: 'center', marginBottom: '20px'}}>🧪 Receita de Preparo</h3>
+                        <div style={{display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '15px'}}>
+                             <div style={{background: 'var(--primary-soft)', padding: '15px', borderRadius: '8px', textAlign: 'center'}}>
+                                <div style={{fontSize: '0.9rem', color: 'var(--text-muted)'}}>Massa de Ácido</div>
+                                <div style={{fontSize: '1.8rem', fontWeight: 'bold', color: 'var(--primary)'}}>{bufResultado.massa_acido} g</div>
+                                <small>({bufResultado.conc_acido_real} M)</small>
+                             </div>
+                             <div style={{background: 'var(--primary-soft)', padding: '15px', borderRadius: '8px', textAlign: 'center'}}>
+                                <div style={{fontSize: '0.9rem', color: 'var(--text-muted)'}}>Massa de Sal</div>
+                                <div style={{fontSize: '1.8rem', fontWeight: 'bold', color: 'var(--primary)'}}>{bufResultado.massa_sal} g</div>
+                                <small>({bufResultado.conc_sal_real} M)</small>
+                             </div>
+                        </div>
+                        <div style={{marginTop: '20px', textAlign: 'center', fontStyle: 'italic', color: 'var(--text-muted)'}}>
+                            Misture os sólidos em aprox. 80% do volume de água, ajuste o pH se necessário e complete o volume para <strong>{bufVol} mL</strong>.
+                        </div>
+                    </div>
+                )}
+             </div>
+        )}
+
         {activeTab === 'tabela' && <TabelaPeriodica apiUrl={API_URL} />}
 
         {activeTab === 'molaridade' && (<div className="card" style={{maxWidth: '600px', margin: '0 auto'}}><h2>Molaridade</h2><div className="input-group-sidebar"><label>Massa (g)</label><input className="input-sidebar" type="number" value={molMassa} onChange={e => setMolMassa(e.target.value)} /></div><div className="input-group-sidebar"><label>MM (g/mol)</label><input className="input-sidebar" type="number" value={molMM} onChange={e => setMolMM(e.target.value)} /></div><div className="input-group-sidebar"><label>Vol (mL)</label><input className="input-sidebar" type="number" value={molVol} onChange={e => setMolVol(e.target.value)} /></div><button className="btn-sidebar" onClick={calcularMolaridade}>CALCULAR</button>{molResultado && (<div style={{marginTop: '20px', fontSize: '2rem', textAlign: 'center', color: 'var(--primary)'}}>{molResultado} M</div>)}</div>)}

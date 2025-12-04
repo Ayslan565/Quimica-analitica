@@ -50,7 +50,43 @@ def calcular_beer_lambert(absorbancia: float, epsilon: float, caminho: float):
         return {"concentracao": round(conc, 6)}
     except Exception:
         return {"erro": "Erro no cálculo."}
+# --- Adicione isso ao final do arquivo backend/app/engines/quimica.py ---
 
+def calcular_tampao(ph: float, pka: float, conc_total: float, volume: float, mm_acido: float, mm_sal: float):
+    """
+    Calcula a massa de Ácido e Sal conjugado necessários para um tampão.
+    Baseado em Henderson-Hasselbalch: pH = pKa + log([Sal]/[Acido])
+    """
+    try:
+        # 1. Razão [Sal]/[Acido] = 10^(pH - pKa)
+        ratio = 10 ** (ph - pka)
+
+        # 2. Sistema de Equações:
+        # [Sal] = ratio * [Acido]
+        # [Sal] + [Acido] = conc_total
+        # Logo: ratio*[Acido] + [Acido] = conc_total -> [Acido] * (1 + ratio) = conc_total
+        
+        conc_acido = conc_total / (1 + ratio)
+        conc_sal = conc_total - conc_acido
+
+        # 3. Moles necessários (Volume em Litros)
+        vol_litros = volume / 1000
+        mols_acido = conc_acido * vol_litros
+        mols_sal = conc_sal * vol_litros
+
+        # 4. Massa necessária (g) = mols * MM
+        massa_acido = mols_acido * mm_acido
+        massa_sal = mols_sal * mm_sal
+
+        return {
+            "massa_acido": round(massa_acido, 4),
+            "massa_sal": round(massa_sal, 4),
+            "conc_acido_real": round(conc_acido, 4),
+            "conc_sal_real": round(conc_sal, 4),
+            "ratio": round(ratio, 3)
+        }
+    except Exception as e:
+        return {"erro": f"Erro no cálculo: {str(e)}"}   
 def obter_tabela_completa():
     """Retorna dados de todos os elementos para o frontend."""
     elementos = []
